@@ -3,7 +3,7 @@ import pytest
 from openstream import AsyncSession, Result, SessionConfig, Text, ToolUse
 
 CONFIG = SessionConfig(
-    model="azure-cognitive-services/gpt-5.4-mini",
+    model="azure-cognitive-services/gpt-5.4",
     env={
         "AZURE_API_KEY": "REDACTED_AZURE_KEY",
         "AZURE_COGNITIVE_SERVICES_RESOURCE_NAME": "normalization-playground",
