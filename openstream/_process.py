@@ -73,6 +73,7 @@ class OpenCodeProcess:
             stderr=asyncio.subprocess.PIPE,
             cwd=self._config.cwd,
             env=self._build_env(),
+            limit=10 * 1024 * 1024,  # 10MB buffer for large tool outputs
         )
 
     async def continue_with(self, message: str) -> None:
@@ -86,6 +87,7 @@ class OpenCodeProcess:
             stderr=asyncio.subprocess.PIPE,
             cwd=self._config.cwd,
             env=self._build_env(),
+            limit=10 * 1024 * 1024,  # 10MB buffer for large tool outputs
         )
 
     async def readline(self) -> str | None:
