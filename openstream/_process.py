@@ -68,7 +68,7 @@ class OpenCodeProcess:
         cmd = self._build_command(message, continue_session=False)
         self._process = await asyncio.create_subprocess_exec(
             *cmd,
-            stdin=asyncio.subprocess.PIPE,
+            stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=self._config.cwd,
@@ -81,7 +81,7 @@ class OpenCodeProcess:
         cmd = self._build_command(message, continue_session=True)
         self._process = await asyncio.create_subprocess_exec(
             *cmd,
-            stdin=asyncio.subprocess.PIPE,
+            stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=self._config.cwd,
