@@ -5,6 +5,7 @@ import threading
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
+from ._direct import DirectClient
 from ._process import OpenCodeProcess
 from ._protocol import Event, parse_event
 from .config import SessionConfig
@@ -12,11 +13,17 @@ from .events import Error, Result, StepFinish
 
 
 class AsyncSession:
-    """Async session wrapping opencode."""
+    """Async session wrapping opencode or the direct Azure API client."""
 
     def __init__(self, config: SessionConfig):
         self._config = config
-        self._process = OpenCodeProcess(config)
+        self._backend = config.backend
+        if config.backend == "direct":
+            self._direct = DirectClient(config)
+            self._process: OpenCodeProcess | None = None
+        else:
+            self._direct = None
+            self._process = OpenCodeProcess(config)
         self._turn_count = 0
         self._total_cost = 0.0
         self._total_input_tokens = 0
@@ -30,6 +37,48 @@ class AsyncSession:
 
     async def send(self, message: str) -> AsyncIterator[Event | Result]:
         """Send a message and yield events. Yields a Result summary at the end."""
+        if self._backend == "direct":
+            async for event in self._send_direct(message):
+                yield event
+        else:
+            async for event in self._send_opencode(message):
+                yield event
+
+    async def _send_direct(self, message: str) -> AsyncIterator[Event | Result]:
+        """Send via direct Azure API client."""
+        assert self._direct is not None
+        self._turn_count += 1
+
+        turn_input_tokens = 0
+        turn_output_tokens = 0
+        turn_cost = 0.0
+        steps = 0
+
+        async for event in self._direct.send(message):
+            if isinstance(event, StepFinish):
+                turn_input_tokens = event.input_tokens
+                turn_output_tokens = event.output_tokens
+                turn_cost += event.cost
+                steps += 1
+            yield event
+
+        # Update totals
+        self._total_input_tokens += turn_input_tokens
+        self._total_output_tokens += turn_output_tokens
+        self._total_cost += turn_cost
+
+        # Yield result summary
+        yield Result(
+            session_id=self._direct.session_id,
+            total_input_tokens=turn_input_tokens,
+            total_output_tokens=turn_output_tokens,
+            total_cost=turn_cost,
+            steps=steps,
+        )
+
+    async def _send_opencode(self, message: str) -> AsyncIterator[Event | Result]:
+        """Send via opencode subprocess."""
+        assert self._process is not None
         if self._turn_count == 0:
             await self._process.start(message)
         else:
@@ -93,11 +142,18 @@ class AsyncSession:
 
     async def close(self) -> None:
         """Close the session and clean up."""
-        await self._process.close()
+        if self._direct is not None:
+            await self._direct.close()
+        if self._process is not None:
+            await self._process.close()
 
     @property
     def session_id(self) -> str | None:
-        return self._process.session_id
+        if self._direct is not None:
+            return self._direct.session_id
+        if self._process is not None:
+            return self._process.session_id
+        return None
 
     @property
     def total_cost(self) -> float:

@@ -4,6 +4,8 @@ version = "0.1.0"
 requires-python = ">=3.11"
 description = "Python SDK for opencode's JSON streaming protocol"
 
+dependencies = ["httpx"]
+
 [project.scripts]
 openstream-stop = "openstream._stop:main"
 
