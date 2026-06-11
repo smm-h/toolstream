@@ -1,0 +1,1 @@
+{"commits":["451e3c211795878a6b4d44d09049da218739e93e","4d9c10d37e700b9d05e8a2b02a372d6a83b57229","9dc041d16f23da3f6a2c450d167e45e8b1e5bd3f"],"user_facing":true,"description":"**New feature.** Initial openstream package with JSON streaming protocol SDK, direct Azure OpenAI backend, and openstream-stop command.","type":"feature"}
