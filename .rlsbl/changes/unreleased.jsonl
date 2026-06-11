@@ -3,3 +3,4 @@
 {"commits":["243c9b1b2c03ead4201880891987242b834847f7","d6fc55170890d3a2e18dd73f155b07a2078f160e"],"user_facing":true,"description":"**Bug fix.** Increase subprocess buffer to 10MB for large tool outputs and use DEVNULL for stdin to prevent blocking.","type":"fix"}
 {"commits":["172e5592f93216195ff79efbb387e9820b6bdf19","2b1c0b56414732afe81104fed09ce3726b0d9ba9","7f01763f0bae5e2d9feffc9d7f8f0f700214a242","ef1b40c8788d25c5ed9f4c76ccbb7d7fe9c5902a"],"user_facing":false}
 {"commits":["137f8b5e731498bdb62d82e814173a167b2d8e75"],"user_facing":false}
+{"commits":["3f7bf59ff2f54eb1bdd6bf7246016e7e2d453efe"],"user_facing":false}
