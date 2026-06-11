@@ -3,6 +3,7 @@
     "pypi"
   ],
   "private": false,
+  "push_timeout": 600,
   "pipelines": {
     "pypi": {
       "type": "pypi",
