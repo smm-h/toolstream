@@ -1,4 +1,4 @@
-"""Direct Azure OpenAI API client -- replaces the opencode subprocess."""
+"""Direct LLM API client via AI Gateway -- replaces the opencode subprocess."""
 
 from __future__ import annotations
 
@@ -147,17 +147,17 @@ def _timestamp_ms() -> int:
 
 
 class DirectClient:
-    """Direct Azure OpenAI API client with tool calling."""
+    """Direct LLM API client (via AI Gateway) with tool calling."""
 
     def __init__(self, config: SessionConfig) -> None:
-        if not config.azure_api_key:
-            raise ValueError("azure_api_key is required for direct backend")
-        if not config.azure_resource:
-            raise ValueError("azure_resource is required for direct backend")
+        if not config.api_key:
+            raise ValueError("api_key is required for direct backend")
+        if not config.base_url:
+            raise ValueError("base_url is required for direct backend")
 
         self._config = config
-        self._base_url = f"https://{config.azure_resource}.cognitiveservices.azure.com"
-        self._api_key = config.azure_api_key
+        self._base_url = config.base_url.rstrip("/")
+        self._api_key = config.api_key
         self._model = _strip_provider(config.model)
         self._messages: list[dict] = []
         self._tools = TOOL_DEFINITIONS
@@ -273,19 +273,18 @@ class DirectClient:
             )
 
     async def _chat_completion(self, messages: list[dict]) -> dict:
-        """Call Azure OpenAI chat completions API with timeout and retry."""
-        url = (
-            f"{self._base_url}/openai/deployments/{self._model}"
-            f"/chat/completions?api-version=2025-01-01-preview"
-        )
+        """Call LLM chat completions via AI Gateway with timeout and retry."""
+        url = self._base_url
         headers = {
-            "api-key": self._api_key,
+            "x-api-key": self._api_key,
             "Content-Type": "application/json",
         }
         body = {
+            "model": self._model,
             "messages": messages,
             "tools": self._tools,
             "max_completion_tokens": 16384,
+            "metadata": {"service": "shopkeep"},
         }
 
         last_error: Exception | None = None

@@ -1,4 +1,4 @@
-"""Tests for the direct Azure OpenAI backend."""
+"""Tests for the direct LLM API backend (via AI Gateway)."""
 
 from __future__ import annotations
 
@@ -34,8 +34,8 @@ def client(tmp_path: Path) -> DirectClient:
     config = SessionConfig(
         model="gpt-5.4",
         backend="direct",
-        azure_api_key="test-key",
-        azure_resource="test-resource",
+        api_key="test-key",
+        base_url="https://test-gateway.example.com",
         cwd=str(tmp_path),
     )
     return DirectClient(config)
@@ -161,20 +161,20 @@ async def test_unknown_tool(client: DirectClient):
 
 
 def test_direct_backend_requires_api_key():
-    with pytest.raises(ValueError, match="azure_api_key"):
+    with pytest.raises(ValueError, match="api_key"):
         DirectClient(SessionConfig(
             model="gpt-5.4",
             backend="direct",
-            azure_resource="test",
+            base_url="https://test-gateway.example.com",
         ))
 
 
-def test_direct_backend_requires_resource():
-    with pytest.raises(ValueError, match="azure_resource"):
+def test_direct_backend_requires_base_url():
+    with pytest.raises(ValueError, match="base_url"):
         DirectClient(SessionConfig(
             model="gpt-5.4",
             backend="direct",
-            azure_api_key="test",
+            api_key="test",
         ))
 
 
@@ -199,15 +199,20 @@ def _load_env() -> dict[str, str]:
 def _make_direct_config() -> SessionConfig:
     """Create a direct-backend SessionConfig from .env."""
     env = _load_env()
-    api_key = env.get("SHOPKEEP_AZURE_API_KEY") or os.environ.get("SHOPKEEP_AZURE_API_KEY")
-    resource = env.get("SHOPKEEP_AZURE_RESOURCE") or os.environ.get("SHOPKEEP_AZURE_RESOURCE")
-    if not api_key or not resource:
-        pytest.skip("SHOPKEEP_AZURE_API_KEY and SHOPKEEP_AZURE_RESOURCE required")
+    api_key = env.get("AI_GATEWAY_API_KEY") or os.environ.get("AI_GATEWAY_API_KEY")
+    base_url = (
+        env.get("AI_COMPLETIONS_FURL")
+        or os.environ.get("AI_COMPLETIONS_FURL")
+        or env.get("AI_COMPLETIONS_URL")
+        or os.environ.get("AI_COMPLETIONS_URL")
+    )
+    if not api_key or not base_url:
+        pytest.skip("AI_GATEWAY_API_KEY and AI_COMPLETIONS_FURL required in .env")
     return SessionConfig(
-        model="azure-cognitive-services/gpt-5.4",
+        model="gpt-5.4",
         backend="direct",
-        azure_api_key=api_key,
-        azure_resource=resource,
+        api_key=api_key,
+        base_url=base_url,
     )
 
 

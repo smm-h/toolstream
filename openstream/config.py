@@ -13,5 +13,5 @@ class SessionConfig:
     skip_permissions: bool = True  # --dangerously-skip-permissions
     system_prompt: str | None = None  # --prompt
     agent: str | None = None  # --agent
-    azure_api_key: str | None = None  # for direct backend
-    azure_resource: str | None = None  # for direct backend
+    api_key: str | None = None  # for direct backend
+    base_url: str | None = None  # for direct backend (full endpoint URL)
