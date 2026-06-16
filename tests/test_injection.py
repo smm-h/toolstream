@@ -8,10 +8,10 @@ from typing import Any
 import httpx
 import pytest
 
-from llmloop._context import ToolContext
-from llmloop._direct import DirectClient
-from llmloop._tools import Tool
-from llmloop.config import SessionConfig
+from toolstream._context import ToolContext
+from toolstream._direct import DirectClient
+from toolstream._tools import Tool
+from toolstream.config import SessionConfig
 
 
 # -- helpers --

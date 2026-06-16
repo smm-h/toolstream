@@ -1,4 +1,4 @@
-"""Integration tests exercising the full llmloop stack with mock LLM responder."""
+"""Integration tests exercising the full toolstream stack with mock LLM responder."""
 
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ from dataclasses import dataclass
 import httpx
 import pytest
 
-from llmloop._agent import AgentDefinition, ToolRef
-from llmloop._direct import DirectClient
-from llmloop._invoke import invoke_agent
-from llmloop._session import AsyncSession, SyncSession
-from llmloop._tools import Tool, tool
-from llmloop.events import Result, StepFinish, StepStart, Text, ToolUse
+from toolstream._agent import AgentDefinition, ToolRef
+from toolstream._direct import DirectClient
+from toolstream._invoke import invoke_agent
+from toolstream._session import AsyncSession, SyncSession
+from toolstream._tools import Tool, tool
+from toolstream.events import Result, StepFinish, StepStart, Text, ToolUse
 
 from .conftest import direct_config, text_response, tool_call_response
 

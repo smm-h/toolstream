@@ -1,4 +1,4 @@
-"""Shared fixtures for llmloop tests -- mock LLM responder."""
+"""Shared fixtures for toolstream tests -- mock LLM responder."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 import pytest
 
-from llmloop.config import SessionConfig
+from toolstream.config import SessionConfig
 
 
 def text_response(

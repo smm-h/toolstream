@@ -2,10 +2,10 @@ import os
 
 import pytest
 
-from llmloop import AsyncSession, Result, SessionConfig, Text, ToolUse
+from toolstream import AsyncSession, Result, SessionConfig, Text, ToolUse
 
-_TEST_API_KEY = os.environ.get("LLMLOOP_TEST_API_KEY", "")
-_TEST_BASE_URL = os.environ.get("LLMLOOP_TEST_BASE_URL", "")
+_TEST_API_KEY = os.environ.get("TOOLSTREAM_TEST_API_KEY", "")
+_TEST_BASE_URL = os.environ.get("TOOLSTREAM_TEST_BASE_URL", "")
 _HAS_CREDENTIALS = bool(_TEST_API_KEY and _TEST_BASE_URL)
 
 
@@ -18,7 +18,7 @@ def _make_config() -> SessionConfig:
     )
 
 
-@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="TOOLSTREAM_TEST_API_KEY and TOOLSTREAM_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_simple_response():
@@ -31,7 +31,7 @@ async def test_simple_response():
         assert "hello" in combined or "hi" in combined or "hey" in combined
 
 
-@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="TOOLSTREAM_TEST_API_KEY and TOOLSTREAM_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_tool_use():
@@ -44,7 +44,7 @@ async def test_tool_use():
         assert any(e.tool == "read" for e in tool_events)
 
 
-@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="TOOLSTREAM_TEST_API_KEY and TOOLSTREAM_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_multi_turn():
@@ -62,7 +62,7 @@ async def test_multi_turn():
         assert "42" in combined
 
 
-@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="TOOLSTREAM_TEST_API_KEY and TOOLSTREAM_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_cost_tracking():
@@ -72,7 +72,7 @@ async def test_cost_tracking():
         assert session.total_cost > 0
 
 
-@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="TOOLSTREAM_TEST_API_KEY and TOOLSTREAM_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_result_event():

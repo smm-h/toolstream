@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from llmloop._agent import (
+from toolstream._agent import (
     AgentDefinition,
     AgentSandbox,
     ToolRef,
@@ -206,8 +206,8 @@ class TestDiscoverAgents:
         assert agents[1].name == "beta"
 
     def test_discover_from_cwd(self, tmp_path):
-        """Agents in <cwd>/.llmloop/agents/ are discovered."""
-        agents_dir = tmp_path / ".llmloop" / "agents"
+        """Agents in <cwd>/.toolstream/agents/ are discovered."""
+        agents_dir = tmp_path / ".toolstream" / "agents"
         agents_dir.mkdir(parents=True)
         _write_agent_json(agents_dir, _make_agent_json(name="local-agent"))
 

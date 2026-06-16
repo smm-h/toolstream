@@ -1,4 +1,4 @@
-"""Tests for llmloop._builtin_tools -- standalone tool implementations."""
+"""Tests for toolstream._builtin_tools -- standalone tool implementations."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from llmloop._builtin_tools import (
+from toolstream._builtin_tools import (
     _resolve_path,
     bash,
     edit,
@@ -133,8 +133,8 @@ class TestBash:
         assert str(tmp_path) in result
 
     async def test_env_passed_to_subprocess(self, tmp_path: Path):
-        env = {"LLMLOOP_TEST_VAR": "test_value_42", "PATH": os.environ.get("PATH", "")}
-        result = await bash("echo $LLMLOOP_TEST_VAR", cwd=str(tmp_path), env=env)
+        env = {"TOOLSTREAM_TEST_VAR": "test_value_42", "PATH": os.environ.get("PATH", "")}
+        result = await bash("echo $TOOLSTREAM_TEST_VAR", cwd=str(tmp_path), env=env)
         assert "test_value_42" in result
 
     async def test_env_isolation(self, tmp_path: Path):

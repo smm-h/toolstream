@@ -1,4 +1,4 @@
-"""Tests for llmloop._tools -- tool registration and discovery."""
+"""Tests for toolstream._tools -- tool registration and discovery."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import types
 
 import pytest
 
-from llmloop._tools import Tool, collect_tools, tool
+from toolstream._tools import Tool, collect_tools, tool
 
 
 # ============================================================
