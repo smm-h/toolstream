@@ -54,7 +54,6 @@ def _filter_tools(
                     description=description,
                     input_schema=input_schema,
                     handler=handler,
-                    server="dynamic",
                     inject=[],
                 )
             )
@@ -80,14 +79,16 @@ def _build_invocation_config(
 
     return SessionConfig(
         model=definition.model or config.model,
-        backend=config.backend,
-        cwd=config.cwd,
-        system_prompt=system_prompt,
-        tools=tools,
-        tool_context=config.tool_context,
-        max_completion_tokens=config.max_completion_tokens,
         api_key=config.api_key,
         base_url=config.base_url,
+        system_prompt=system_prompt,
+        cwd=config.cwd,
+        tools=tools,
+        tool_context=config.tool_context,
+        tool_env=config.tool_env,
+        max_completion_tokens=config.max_completion_tokens,
+        sandbox=config.sandbox,
+        metadata=config.metadata,
     )
 
 
