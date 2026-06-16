@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -105,48 +106,42 @@ class TestWrite:
 
 class TestBash:
     async def test_basic_command(self, tmp_path: Path):
-        result = await bash("echo hello", cwd=str(tmp_path))
+        result = await bash("echo hello", cwd=str(tmp_path), env=dict(os.environ))
         assert "hello" in result
 
     async def test_timeout_handling(self, tmp_path: Path):
-        result = await bash("sleep 999", cwd=str(tmp_path), timeout=1)
+        result = await bash("sleep 999", cwd=str(tmp_path), env=dict(os.environ), timeout=1)
         assert "timed out" in result
 
     async def test_output_truncation(self, tmp_path: Path):
         # Generate output larger than 50K chars
-        result = await bash("python3 -c \"print('x' * 60000)\"", cwd=str(tmp_path))
+        result = await bash("python3 -c \"print('x' * 60000)\"", cwd=str(tmp_path), env=dict(os.environ))
         assert "truncated" in result
         assert len(result) < 60000
 
     async def test_truncation_reports_original_length(self, tmp_path: Path):
         # The truncation message should report the full original length
-        result = await bash("python3 -c \"print('x' * 60000)\"", cwd=str(tmp_path))
+        result = await bash("python3 -c \"print('x' * 60000)\"", cwd=str(tmp_path), env=dict(os.environ))
         assert "60001 total chars" in result  # 60000 x's + newline from print
 
     async def test_stderr_captured(self, tmp_path: Path):
-        result = await bash("echo err >&2", cwd=str(tmp_path))
+        result = await bash("echo err >&2", cwd=str(tmp_path), env=dict(os.environ))
         assert "err" in result
 
     async def test_uses_cwd(self, tmp_path: Path):
-        result = await bash("pwd", cwd=str(tmp_path))
+        result = await bash("pwd", cwd=str(tmp_path), env=dict(os.environ))
         assert str(tmp_path) in result
 
-    async def test_blocklisted_var_hidden(self, tmp_path: Path, monkeypatch):
-        monkeypatch.setenv("SUPABASE_DB_PASSWORD", "secret")
-        result = await bash("echo $SUPABASE_DB_PASSWORD", cwd=str(tmp_path))
-        assert "secret" not in result
+    async def test_env_passed_to_subprocess(self, tmp_path: Path):
+        env = {"LLMLOOP_TEST_VAR": "test_value_42", "PATH": os.environ.get("PATH", "")}
+        result = await bash("echo $LLMLOOP_TEST_VAR", cwd=str(tmp_path), env=env)
+        assert "test_value_42" in result
 
-    async def test_non_blocklisted_var_accessible(self, tmp_path: Path, monkeypatch):
-        monkeypatch.setenv("GITHUB_TOKEN", "mytoken")
-        result = await bash("echo $GITHUB_TOKEN", cwd=str(tmp_path))
-        assert "mytoken" in result
-
-    async def test_env_blocklist_is_frozenset(self):
-        from llmloop._builtin_tools import ENV_BLOCKLIST
-        assert isinstance(ENV_BLOCKLIST, frozenset)
-        assert "SUPABASE_DB_PASSWORD" in ENV_BLOCKLIST
-        assert "SHOPKEEP_DATABASE_URL" in ENV_BLOCKLIST
-        assert "AI_GATEWAY_API_KEY" in ENV_BLOCKLIST
+    async def test_env_isolation(self, tmp_path: Path):
+        # With an empty env, process env vars should NOT be inherited
+        result = await bash("echo $PATH", cwd=str(tmp_path), env={})
+        # PATH is not in the env dict, so the shell should expand $PATH to empty
+        assert os.environ.get("PATH", "") not in result or result.strip() == ""
 
 
 # ============================================================
@@ -224,7 +219,7 @@ class TestGrep:
     async def test_grep_no_match(self, tmp_path: Path):
         (tmp_path / "a.txt").write_text("nothing relevant\n")
         result = await grep("nonexistent_pattern", path=str(tmp_path), cwd=str(tmp_path))
-        # grep returns exit code 1 on no match -- bash captures that
+        # grep returns exit code 1 on no match
         assert "nonexistent_pattern" not in result
 
 
