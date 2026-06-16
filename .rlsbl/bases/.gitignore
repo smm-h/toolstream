@@ -8,10 +8,9 @@ dist/
 *.egg-info/
 .rlsbl-notes-*.tmp
 .rlsbl/lock
+.rlsbl-monorepo/lock
 .credentials.json
 .*-cache.json
 .env
 .env.local
 *.local-only
-
-.rlsbl-monorepo/lock
