@@ -1,42 +1,27 @@
 from __future__ import annotations
 
 import asyncio
-import logging
+import queue
 import threading
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
-logger = logging.getLogger("llmloop")
-
 from ._direct import DirectClient
-from ._process import OpenCodeProcess
-from ._protocol import Event, parse_event
 from .config import SessionConfig
-from .events import Error, Result, StepFinish
+from .events import Result, StepFinish
 
 
 class AsyncSession:
-    """Async session wrapping opencode or the direct Azure API client."""
+    """Async session wrapping the direct LLM API client."""
 
     def __init__(self, config: SessionConfig):
         self._config = config
-        self._backend = config.backend
-        if config.backend == "direct":
-            self._direct = DirectClient(
-                config,
-                tools=config.tools,
-                tool_context=config.tool_context,
-                max_completion_tokens=config.max_completion_tokens,
-            )
-            self._process: OpenCodeProcess | None = None
-        else:
-            self._direct = None
-            self._process = OpenCodeProcess(config)
-            if config.tools or config.tool_context or config.sandbox:
-                logger.warning(
-                    "Agent features (tools, tool_context, sandbox) are only "
-                    "supported by the direct backend"
-                )
+        self._direct = DirectClient(
+            config,
+            tools=config.tools,
+            tool_context=config.tool_context,
+            max_completion_tokens=config.max_completion_tokens,
+        )
         self._turn_count = 0
         self._total_cost = 0.0
         self._total_input_tokens = 0
@@ -48,29 +33,30 @@ class AsyncSession:
     async def __aexit__(self, *args: Any) -> None:
         await self.close()
 
-    async def send(self, message: str) -> AsyncIterator[Event | Result]:
+    async def send(self, message: str) -> AsyncIterator[Any]:
         """Send a message and yield events. Yields a Result summary at the end."""
-        if self._backend == "direct":
-            async for event in self._send_direct(message):
-                yield event
-        else:
-            async for event in self._send_opencode(message):
-                yield event
+        async for event in self._send_direct(message):
+            yield event
 
-    async def _send_direct(self, message: str) -> AsyncIterator[Event | Result]:
-        """Send via direct Azure API client."""
-        assert self._direct is not None
+    async def _send_direct(self, message: str) -> AsyncIterator[Any]:
+        """Send via direct API client."""
         self._turn_count += 1
 
         turn_input_tokens = 0
         turn_output_tokens = 0
+        turn_reasoning_tokens = 0
+        turn_cache_read_tokens = 0
+        turn_cache_write_tokens = 0
         turn_cost = 0.0
         steps = 0
 
         async for event in self._direct.send(message):
             if isinstance(event, StepFinish):
-                turn_input_tokens = event.input_tokens
-                turn_output_tokens = event.output_tokens
+                turn_input_tokens += event.input_tokens
+                turn_output_tokens += event.output_tokens
+                turn_reasoning_tokens += event.reasoning_tokens
+                turn_cache_read_tokens += event.cache_read_tokens
+                turn_cache_write_tokens += event.cache_write_tokens
                 turn_cost += event.cost
                 steps += 1
             yield event
@@ -89,84 +75,13 @@ class AsyncSession:
             steps=steps,
         )
 
-    async def _send_opencode(self, message: str) -> AsyncIterator[Event | Result]:
-        """Send via opencode subprocess."""
-        assert self._process is not None
-        if self._turn_count == 0:
-            await self._process.start(message)
-        else:
-            await self._process.continue_with(message)
-
-        self._turn_count += 1
-
-        turn_input_tokens = 0
-        turn_output_tokens = 0
-        turn_cost = 0.0
-        steps = 0
-        session_id_captured = False
-
-        while True:
-            line = await self._process.readline()
-            if line is None:
-                break
-
-            event = parse_event(line)
-            if event is None:
-                continue
-
-            # Capture session ID from the first event
-            if not session_id_captured and hasattr(event, "session_id") and event.session_id:
-                self._process.session_id = event.session_id
-                session_id_captured = True
-
-            if isinstance(event, StepFinish):
-                turn_input_tokens += event.input_tokens
-                turn_output_tokens += event.output_tokens
-                turn_cost += event.cost
-                steps += 1
-
-            yield event
-
-        # Wait for process to finish
-        exit_code = await self._process.wait()
-        if exit_code != 0 and exit_code != -1:
-            stderr = await self._process.read_stderr()
-            yield Error(
-                session_id=self._process.session_id or "",
-                name="process_error",
-                message=f"opencode exited with code {exit_code}: {stderr.strip()}",
-                data={"exit_code": exit_code},
-                timestamp=0,
-            )
-
-        # Update totals
-        self._total_input_tokens += turn_input_tokens
-        self._total_output_tokens += turn_output_tokens
-        self._total_cost += turn_cost
-
-        # Yield result summary
-        yield Result(
-            session_id=self._process.session_id or "",
-            total_input_tokens=turn_input_tokens,
-            total_output_tokens=turn_output_tokens,
-            total_cost=turn_cost,
-            steps=steps,
-        )
-
     async def close(self) -> None:
         """Close the session and clean up."""
-        if self._direct is not None:
-            await self._direct.close()
-        if self._process is not None:
-            await self._process.close()
+        await self._direct.close()
 
     @property
     def session_id(self) -> str | None:
-        if self._direct is not None:
-            return self._direct.session_id
-        if self._process is not None:
-            return self._process.session_id
-        return None
+        return self._direct.session_id
 
     @property
     def total_cost(self) -> float:
@@ -208,20 +123,32 @@ class SyncSession:
         future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         return future.result()
 
-    def send(self, message: str) -> Iterator[Event | Result]:
-        """Send a message and yield events."""
+    def send(self, message: str) -> Iterator[Any]:
+        """Send a message and yield events incrementally via a queue bridge."""
         assert self._async_session is not None
         assert self._loop is not None
 
-        # Collect events from the async iterator via the background loop
-        async def _collect() -> list[Event | Result]:
-            events: list[Event | Result] = []
-            async for event in self._async_session.send(message):  # type: ignore[union-attr]
-                events.append(event)
-            return events
+        q: queue.Queue = queue.Queue()
+        sentinel = object()
 
-        events = self._run_coroutine(_collect())
-        yield from events
+        async def _produce() -> None:
+            try:
+                async for event in self._async_session.send(message):  # type: ignore[union-attr]
+                    q.put(event)
+            except Exception as e:
+                q.put(e)
+            finally:
+                q.put(sentinel)
+
+        asyncio.run_coroutine_threadsafe(_produce(), self._loop)
+
+        while True:
+            item = q.get()
+            if item is sentinel:
+                break
+            if isinstance(item, Exception):
+                raise item
+            yield item
 
     def close(self) -> None:
         """Close the session and shut down the event loop."""
