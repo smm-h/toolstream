@@ -161,6 +161,24 @@ class TestLoadAgent:
         with pytest.raises(FileNotFoundError):
             load_agent(path)
 
+    def test_load_empty_tools_list(self, tmp_path):
+        """An explicit empty tools list means 'no tools allowed' and must
+        remain [] -- it must NOT be conflated with None (tools unspecified)."""
+        data = _make_agent_json(tools=[])
+        path = _write_agent_json(tmp_path, data)
+        agent = load_agent(path)
+
+        assert agent.tools == []
+
+    def test_load_without_tools(self, tmp_path):
+        """Missing tools key results in None (tools unspecified / use defaults),
+        which is distinct from an empty list (no tools allowed)."""
+        data = _make_agent_json()
+        path = _write_agent_json(tmp_path, data)
+        agent = load_agent(path)
+
+        assert agent.tools is None
+
     def test_load_bare_name(self):
         """Bare name (no separators, no .json) raises FileNotFoundError
         with a message about discover_agents."""

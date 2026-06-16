@@ -51,9 +51,9 @@ def _parse_agent_data(data: dict, source: str) -> AgentDefinition:
         data: Parsed JSON dict.
         source: Human-readable origin for error messages (file path, package).
     """
-    tool_refs: list[ToolRef] = []
-    for entry in data.get("tools", []) or []:
-        tool_refs.append(ToolRef(name=entry["name"]))
+    tools: list[ToolRef] | None = None
+    if "tools" in data:
+        tools = [ToolRef(name=entry["name"]) for entry in (data["tools"] or [])]
 
     sandbox: AgentSandbox | None = None
     if "sandbox" in data:
@@ -68,7 +68,7 @@ def _parse_agent_data(data: dict, source: str) -> AgentDefinition:
         prompt_template=data["prompt_template"],
         version=data["version"],
         description=data.get("description", ""),
-        tools=tool_refs or None,
+        tools=tools,
         sandbox=sandbox,
         model=data.get("model"),
     )
