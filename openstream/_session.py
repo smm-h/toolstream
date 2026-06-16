@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import threading
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
+
+logger = logging.getLogger("openstream")
 
 from ._direct import DirectClient
 from ._process import OpenCodeProcess
@@ -29,6 +32,11 @@ class AsyncSession:
         else:
             self._direct = None
             self._process = OpenCodeProcess(config)
+            if config.tools or config.tool_context or config.sandbox:
+                logger.warning(
+                    "Agent features (tools, tool_context, sandbox) are only "
+                    "supported by the direct backend"
+                )
         self._turn_count = 0
         self._total_cost = 0.0
         self._total_input_tokens = 0

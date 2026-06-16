@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from ._agent import AgentSandbox
     from ._tools import Tool
 
 
@@ -22,3 +23,4 @@ class SessionConfig:
     tools: list[Tool] | None = None  # tool objects, None = built-in defaults
     tool_context: object | None = None  # for injection (Phase 5)
     max_completion_tokens: int = 16384
+    sandbox: AgentSandbox | None = None
