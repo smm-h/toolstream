@@ -263,3 +263,25 @@ class TestGlobFiles:
     async def test_glob_no_matches(self, tmp_path: Path):
         result = await glob_files(str(tmp_path / "*.xyz"), cwd=str(tmp_path))
         assert result == ""
+
+    async def test_relative_pattern_respects_cwd(self, tmp_path: Path):
+        """Relative patterns should find files relative to cwd."""
+        (tmp_path / "one.txt").write_text("")
+        (tmp_path / "two.txt").write_text("")
+        (tmp_path / "skip.py").write_text("")
+        result = await glob_files("*.txt", cwd=str(tmp_path))
+        assert "one.txt" in result
+        assert "two.txt" in result
+        assert "skip.py" not in result
+
+    async def test_absolute_pattern_ignores_cwd(self, tmp_path: Path):
+        """Absolute patterns should not be affected by cwd."""
+        target_dir = tmp_path / "target"
+        target_dir.mkdir()
+        (target_dir / "found.txt").write_text("")
+        decoy_dir = tmp_path / "decoy"
+        decoy_dir.mkdir()
+        (decoy_dir / "nope.txt").write_text("")
+        result = await glob_files(str(target_dir / "*.txt"), cwd=str(decoy_dir))
+        assert "found.txt" in result
+        assert "nope.txt" not in result

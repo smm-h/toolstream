@@ -100,5 +100,8 @@ async def grep(pattern: str, path: str, cwd: str, include: str | None = None) ->
 @tool("builtin", name="glob", inject=["cwd"])
 async def glob_files(pattern: str, cwd: str) -> str:
     """Find files matching a glob pattern. Returns up to 100 matches."""
-    matches = _stdlib_glob(pattern, recursive=True)
+    if os.path.isabs(pattern):
+        matches = _stdlib_glob(pattern, recursive=True)
+    else:
+        matches = _stdlib_glob(pattern, root_dir=cwd, recursive=True)
     return "\n".join(matches[:100])
