@@ -6,11 +6,9 @@ from ._agent import (
     load_agent,
     resolve_prompt,
 )
-from ._context import PipelineContext
+from ._context import ToolContext
 from ._invoke import invoke_agent, invoke_agent_sync
 from ._session import AsyncSession, SyncSession
-from ._stop import stop
-from ._builtin_tools import ENV_BLOCKLIST
 from ._tools import Tool, collect_tools, tool
 from .config import SessionConfig
 from .events import Error, Result, StepFinish, StepStart, Text, ToolUse
@@ -31,7 +29,7 @@ __all__ = [
     "Tool",
     "collect_tools",
     # Context
-    "PipelineContext",
+    "ToolContext",
     # Sessions
     "AsyncSession",
     "SyncSession",
@@ -43,7 +41,4 @@ __all__ = [
     "StepFinish",
     "Error",
     "Result",
-    # Utilities
-    "stop",
-    "ENV_BLOCKLIST",
 ]
