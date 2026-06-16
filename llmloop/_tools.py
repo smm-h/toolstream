@@ -21,12 +21,10 @@ class Tool:
     description: str
     input_schema: dict
     handler: Callable
-    server: str
     inject: list[str]
 
 
 def tool(
-    server: str,
     *,
     name: str | None = None,
     description: str | None = None,
@@ -35,11 +33,11 @@ def tool(
     """Decorator factory that attaches Tool metadata to a function.
 
     Usage:
-        @tool("my-server")
+        @tool()
         def my_func(x: int) -> str:
             ...
 
-        @tool("my-server", inject=["ctx"])
+        @tool(inject=["ctx"])
         def my_func(ctx, x: int) -> str:
             ...
 
@@ -78,7 +76,6 @@ def tool(
             description=tool_description,
             input_schema=input_schema,
             handler=fn,
-            server=server,
             inject=inject_list,
         )
 
