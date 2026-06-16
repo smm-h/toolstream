@@ -5,3 +5,16 @@
 {"commits":["137f8b5e731498bdb62d82e814173a167b2d8e75"],"user_facing":false}
 {"commits":["3f7bf59ff2f54eb1bdd6bf7246016e7e2d453efe"],"user_facing":false}
 {"commits":["e925d9e8b9f37bf15ac66ba6d624dd41b26a8b63"],"user_facing":false}
+{"commits":["1a10bf2992bd03a8add3e9cd66d41e58c7bc570a","3cccef276433e733c243e48cdd956e0f16d656bd"],"user_facing":true,"description":"**New feature.** Tool registration framework with @tool decorator, Tool dataclass, collect_tools(), and JSON Schema generation from type hints","type":"feature"}
+{"commits":["61483504e81345b6a5dfc93dd51dfc8ade129836"],"user_facing":true,"description":"**New feature.** Agent definition loading with discovery, prompt resolution, and YAML-based agent definitions","type":"feature"}
+{"commits":["3a21040eb437d62bd126a7d2b94f4b77cf77a766"],"user_facing":true,"description":"**New feature.** Context injection in DirectClient and PipelineContext for dynamic prompt variable substitution","type":"feature"}
+{"commits":["62ccbbc2d7e4b3a44e0e2d1477279243ad9593e6"],"user_facing":true,"description":"**New feature.** Agent invocation with invoke_agent and invoke_agent_sync for running agent definitions end-to-end","type":"feature"}
+{"commits":["89126d67b1e163bb4e625155c2fa5fb69e0b7dfe"],"user_facing":true,"description":"**New feature.** Refactor DirectClient to use dynamic tool dispatch from registered tools","type":"feature"}
+{"commits":["1691106cb058bb2abb706310a83952d41d48ed63"],"user_facing":true,"description":"**New feature.** Extract builtin tools to standalone functions in _builtin_tools.py","type":"feature"}
+{"commits":["18c42d12e011ac8acedff71cf943962caa04f826"],"user_facing":true,"description":"**New feature.** Finalize SessionConfig and public API surface for openstream","type":"feature"}
+{"commits":["df16650e0d41e7f24b397ce99f721fda6bc56992","ade417a5fdd4a21d109d0aa8a5881dfef24fb9dd"],"user_facing":true,"description":"**New feature.** Environment variable isolation filters sensitive vars from bash tool subprocesses with exported ENV_BLOCKLIST","type":"feature"}
+{"commits":["45aeb9c03febd48171462e5ed74a3d68cd2e8fbc"],"user_facing":true,"description":"**Bug fix.** Literal schema type inference correctly handles int/float/bool values","type":"fix"}
+{"commits":["3f134599655fbc775425fd0e6af7ac7911300cca"],"user_facing":true,"description":"**Bug fix.** glob_files now respects cwd parameter instead of always using process working directory","type":"fix"}
+{"commits":["1174b77fe00f4be730850eef261814a4c8283950"],"user_facing":true,"description":"**Bug fix.** Preserve empty tools list instead of conflating with None","type":"fix"}
+{"commits":["f103d44dc4c305ac7725e4840c30db96783e2366"],"user_facing":true,"description":"**Bug fix.** Derive builtin tool names dynamically and remove overridden names from builtin set","type":"fix"}
+{"commits":["067afc95d20bd8d2fe289f4faabf840884bcc2b1","0740d23478e39045d59b1fc041297bccef39c046","e4f111bdef57bdb116910ec72005ba48358dff0c","f41bf8e8ab5637fa45bc33b6cb78d7243d87f7ee"],"user_facing":false}
