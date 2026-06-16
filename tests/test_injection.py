@@ -1,4 +1,4 @@
-"""Tests for context injection in DirectClient and PipelineContext."""
+"""Tests for context injection in DirectClient and ToolContext."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 import pytest
 
-from llmloop._context import PipelineContext
+from llmloop._context import ToolContext
 from llmloop._direct import DirectClient
 from llmloop._tools import Tool
 from llmloop.config import SessionConfig
@@ -27,7 +27,6 @@ def _make_tool(
         description=f"test tool {name}",
         input_schema={"type": "object", "properties": {}},
         handler=handler,
-        server="test",
         inject=inject or [],
     )
 
@@ -35,9 +34,9 @@ def _make_tool(
 def _make_config() -> SessionConfig:
     return SessionConfig(
         model="test-model",
-        backend="direct",
         api_key="test-key",
         base_url="http://localhost:9999/v1/chat/completions",
+        system_prompt="test",
     )
 
 
@@ -151,8 +150,12 @@ class TestContextInjection:
         assert received["x"] == "hello"
 
     @pytest.mark.asyncio
-    async def test_inject_with_pipeline_context(self):
-        """PipelineContext works as tool_context for injection."""
+    async def test_inject_with_tool_context_subclass(self):
+        """A ToolContext subclass works as tool_context for injection."""
+
+        @dataclass
+        class MyContext(ToolContext):
+            browser_ctx: Any = None
 
         received: dict = {}
 
@@ -161,7 +164,7 @@ class TestContextInjection:
             return "ok"
 
         fake_browser = object()
-        ctx = PipelineContext(browser_ctx=fake_browser)
+        ctx = MyContext(browser_ctx=fake_browser)
         tool = _make_tool("my_tool", handler, inject=["browser_ctx"])
         client = _make_client(tools=[tool], tool_context=ctx)
 
@@ -170,31 +173,47 @@ class TestContextInjection:
         assert received["browser_ctx"] is fake_browser
 
 
-# -- PipelineContext tests --
+# -- ToolContext tests --
 
-class TestPipelineContext:
+class TestToolContext:
 
-    def test_default_fields_are_none(self):
-        ctx = PipelineContext()
-        assert ctx.spawn_ctx is None
-        assert ctx.browser_ctx is None
+    def test_subclass_with_custom_fields(self):
+        """ToolContext can be subclassed with custom fields."""
 
-    def test_holds_sub_contexts(self):
-        spawn = object()
-        browser = object()
-        ctx = PipelineContext(spawn_ctx=spawn, browser_ctx=browser)
-        assert ctx.spawn_ctx is spawn
-        assert ctx.browser_ctx is browser
+        @dataclass
+        class MyCtx(ToolContext):
+            spawn_ctx: Any = None
+            browser_ctx: Any = None
 
-    def test_getattr_returns_correct_values(self):
-        """getattr on PipelineContext returns the correct sub-contexts."""
-        spawn = {"model": "test"}
-        browser = {"page": "mock"}
-        ctx = PipelineContext(spawn_ctx=spawn, browser_ctx=browser)
-        assert getattr(ctx, "spawn_ctx") is spawn
-        assert getattr(ctx, "browser_ctx") is browser
+        ctx = MyCtx(spawn_ctx="s", browser_ctx="b")
+        assert ctx.spawn_ctx == "s"
+        assert ctx.browser_ctx == "b"
+
+    def test_getattr_on_subclass(self):
+        """getattr works on a subclassed ToolContext."""
+
+        @dataclass
+        class MyCtx(ToolContext):
+            alpha: str = "a"
+            beta: int = 2
+
+        ctx = MyCtx(alpha="A", beta=99)
+        assert getattr(ctx, "alpha") == "A"
+        assert getattr(ctx, "beta") == 99
 
     def test_getattr_missing_raises(self):
-        ctx = PipelineContext()
+        """getattr raises AttributeError for missing fields on ToolContext."""
+        ctx = ToolContext()
+        with pytest.raises(AttributeError):
+            getattr(ctx, "nonexistent_field")
+
+    def test_subclass_getattr_missing_raises(self):
+        """getattr raises AttributeError for missing fields on a ToolContext subclass."""
+
+        @dataclass
+        class MyCtx(ToolContext):
+            foo: str = "bar"
+
+        ctx = MyCtx()
         with pytest.raises(AttributeError):
             getattr(ctx, "nonexistent_field")
