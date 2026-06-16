@@ -16,7 +16,7 @@ from llmloop._tools import Tool, collect_tools, tool
 
 class TestToolMetadata:
     def test_stores_tool_on_function(self):
-        @tool("test-server")
+        @tool()
         def greet(name: str) -> str:
             """Say hello."""
 
@@ -24,14 +24,14 @@ class TestToolMetadata:
         assert isinstance(greet._tool, Tool)
 
     def test_correct_name(self):
-        @tool("srv")
+        @tool()
         def my_func(x: int):
             """Do something."""
 
         assert my_func._tool.name == "my_func"
 
     def test_correct_description_from_docstring(self):
-        @tool("srv")
+        @tool()
         def my_func(x: int):
             """First line of doc.
 
@@ -40,15 +40,15 @@ class TestToolMetadata:
 
         assert my_func._tool.description == "First line of doc."
 
-    def test_correct_server(self):
-        @tool("my-server")
+    def test_no_server_field(self):
+        @tool()
         def fn(x: int):
             """Doc."""
 
-        assert fn._tool.server == "my-server"
+        assert not hasattr(fn._tool, "server")
 
     def test_correct_input_schema(self):
-        @tool("srv")
+        @tool()
         def fn(name: str, count: int = 1):
             """Doc."""
 
@@ -59,21 +59,21 @@ class TestToolMetadata:
         assert schema["required"] == ["name"]
 
     def test_handler_is_original_function(self):
-        @tool("srv")
+        @tool()
         def fn(x: int):
             """Doc."""
 
         assert fn._tool.handler is fn
 
     def test_inject_stored(self):
-        @tool("srv", inject=["ctx", "db"])
+        @tool(inject=["ctx", "db"])
         def fn(ctx, db, name: str):
             """Doc."""
 
         assert fn._tool.inject == ["ctx", "db"]
 
     def test_no_inject_stored_as_empty_list(self):
-        @tool("srv")
+        @tool()
         def fn(x: int):
             """Doc."""
 
@@ -91,11 +91,11 @@ class TestToolIdentity:
             """Doc."""
 
         fn_before = fn
-        fn_after = tool("srv")(fn)
+        fn_after = tool()(fn)
         assert fn_before is fn_after
 
     def test_function_still_callable(self):
-        @tool("srv")
+        @tool()
         def add(a: int, b: int) -> int:
             """Add two numbers."""
             return a + b
@@ -112,20 +112,20 @@ class TestToolInjectValidation:
     def test_rejects_nonexistent_inject_param(self):
         with pytest.raises(ValueError, match="inject parameter 'missing'"):
 
-            @tool("srv", inject=["missing"])
+            @tool(inject=["missing"])
             def fn(x: int):
                 """Doc."""
 
     def test_rejects_one_bad_param_among_valid(self):
         with pytest.raises(ValueError, match="inject parameter 'bad'"):
 
-            @tool("srv", inject=["ctx", "bad"])
+            @tool(inject=["ctx", "bad"])
             def fn(ctx, x: int):
                 """Doc."""
 
     def test_accepts_valid_inject_param(self):
         # Should not raise
-        @tool("srv", inject=["ctx"])
+        @tool(inject=["ctx"])
         def fn(ctx, x: int):
             """Doc."""
 
@@ -139,7 +139,7 @@ class TestToolInjectValidation:
 
 class TestToolInjectSchema:
     def test_injected_params_excluded_from_schema(self):
-        @tool("srv", inject=["ctx"])
+        @tool(inject=["ctx"])
         def fn(ctx, name: str, age: int):
             """Doc."""
 
@@ -149,7 +149,7 @@ class TestToolInjectSchema:
         assert "age" in schema["properties"]
 
     def test_multiple_injected_params_excluded(self):
-        @tool("srv", inject=["ctx", "db"])
+        @tool(inject=["ctx", "db"])
         def fn(ctx, db, value: str):
             """Doc."""
 
@@ -164,21 +164,21 @@ class TestToolInjectSchema:
 
 class TestToolNameDescription:
     def test_name_defaults_to_function_name(self):
-        @tool("srv")
+        @tool()
         def my_cool_func(x: int):
             """Doc."""
 
         assert my_cool_func._tool.name == "my_cool_func"
 
     def test_explicit_name_overrides(self):
-        @tool("srv", name="custom_name")
+        @tool(name="custom_name")
         def fn(x: int):
             """Doc."""
 
         assert fn._tool.name == "custom_name"
 
     def test_description_defaults_to_first_docstring_line(self):
-        @tool("srv")
+        @tool()
         def fn(x: int):
             """This is the summary.
 
@@ -188,21 +188,21 @@ class TestToolNameDescription:
         assert fn._tool.description == "This is the summary."
 
     def test_explicit_description_overrides(self):
-        @tool("srv", description="My custom description")
+        @tool(description="My custom description")
         def fn(x: int):
             """This docstring is ignored."""
 
         assert fn._tool.description == "My custom description"
 
     def test_no_docstring_gives_empty_description(self):
-        @tool("srv")
+        @tool()
         def fn(x: int):
             pass
 
         assert fn._tool.description == ""
 
     def test_empty_docstring_gives_empty_description(self):
-        @tool("srv")
+        @tool()
         def fn(x: int):
             """"""
 
@@ -216,7 +216,7 @@ class TestToolNameDescription:
 
 class TestToolNoInject:
     def test_no_inject_all_params_in_schema(self):
-        @tool("srv")
+        @tool()
         def fn(a: str, b: int, c: float = 0.0):
             """Doc."""
 
@@ -240,11 +240,11 @@ def _make_module(name: str, **attrs) -> types.ModuleType:
 
 class TestCollectTools:
     def test_finds_decorated_functions(self):
-        @tool("srv")
+        @tool()
         def func_a(x: int):
             """A."""
 
-        @tool("srv")
+        @tool()
         def func_b(y: str):
             """B."""
 
@@ -254,7 +254,7 @@ class TestCollectTools:
         assert names == {"func_a", "func_b"}
 
     def test_ignores_non_decorated(self):
-        @tool("srv")
+        @tool()
         def decorated(x: int):
             """Doc."""
 
@@ -267,11 +267,11 @@ class TestCollectTools:
         assert tools[0].name == "decorated"
 
     def test_across_multiple_modules(self):
-        @tool("srv1")
+        @tool()
         def func_a(x: int):
             """A."""
 
-        @tool("srv2")
+        @tool()
         def func_b(y: str):
             """B."""
 
@@ -282,11 +282,11 @@ class TestCollectTools:
         assert names == {"func_a", "func_b"}
 
     def test_raises_on_name_collision(self):
-        @tool("srv1", name="shared_name")
+        @tool(name="shared_name")
         def func_a(x: int):
             """A."""
 
-        @tool("srv2", name="shared_name")
+        @tool(name="shared_name")
         def func_b(y: str):
             """B."""
 
@@ -297,11 +297,11 @@ class TestCollectTools:
             collect_tools(mod1, mod2)
 
     def test_name_collision_within_single_module(self):
-        @tool("srv", name="dup")
+        @tool(name="dup")
         def func_a(x: int):
             """A."""
 
-        @tool("srv", name="dup")
+        @tool(name="dup")
         def func_b(y: str):
             """B."""
 
@@ -335,7 +335,7 @@ class TestCollectTools:
 
 class TestToolFrozen:
     def test_tool_is_frozen(self):
-        @tool("srv")
+        @tool()
         def fn(x: int):
             """Doc."""
 
