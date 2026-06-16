@@ -34,9 +34,9 @@ def test_strip_provider_multiple_slashes():
 def _base_config(tmp_path: Path) -> SessionConfig:
     return SessionConfig(
         model="gpt-5.4",
-        backend="direct",
         api_key="test-key",
         base_url="https://test-gateway.example.com",
+        system_prompt="You are a test assistant.",
         cwd=str(tmp_path),
     )
 
@@ -198,7 +198,6 @@ async def test_dispatch_exception_becomes_error_string(tmp_path: Path):
         description="A tool that always fails",
         input_schema={"type": "object", "properties": {}},
         handler=exploding_handler,
-        server="test",
         inject=[],
     )
     config = _base_config(tmp_path)
@@ -222,7 +221,6 @@ async def test_custom_tool_registration(tmp_path: Path):
         description="custom tool",
         input_schema={"type": "object", "properties": {"x": {"type": "integer"}}, "required": ["x"]},
         handler=my_tool,
-        server="test",
         inject=[],
     )
     config = _base_config(tmp_path)
@@ -247,7 +245,6 @@ async def test_user_tool_overrides_builtin(tmp_path: Path):
         description="overridden read",
         input_schema={"type": "object", "properties": {}},
         handler=custom_read,
-        server="test",
         inject=[],
     )
     config = _base_config(tmp_path)
@@ -282,7 +279,6 @@ def test_tool_definitions_include_custom(tmp_path: Path):
         description="custom tool",
         input_schema={"type": "object", "properties": {"x": {"type": "integer"}}},
         handler=lambda: None,
-        server="test",
         inject=[],
     )
     config = _base_config(tmp_path)
@@ -370,8 +366,9 @@ def test_direct_backend_requires_api_key():
     with pytest.raises(ValueError, match="api_key"):
         DirectClient(SessionConfig(
             model="gpt-5.4",
-            backend="direct",
+            api_key="",
             base_url="https://test-gateway.example.com",
+            system_prompt="test",
         ))
 
 
@@ -379,8 +376,9 @@ def test_direct_backend_requires_base_url():
     with pytest.raises(ValueError, match="base_url"):
         DirectClient(SessionConfig(
             model="gpt-5.4",
-            backend="direct",
             api_key="test",
+            base_url="",
+            system_prompt="test",
         ))
 
 
@@ -396,9 +394,9 @@ def _make_direct_config() -> SessionConfig:
     """Create a direct-backend SessionConfig from environment variables."""
     return SessionConfig(
         model="gpt-5.4",
-        backend="direct",
         api_key=_TEST_API_KEY,
         base_url=_TEST_BASE_URL,
+        system_prompt="You are a helpful coding assistant.",
     )
 
 
