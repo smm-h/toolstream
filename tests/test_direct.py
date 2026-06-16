@@ -8,10 +8,10 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
-from openstream._direct import DirectClient, _strip_provider
-from openstream._tools import Tool, tool
+from llmloop._direct import DirectClient, _strip_provider
+from llmloop._tools import Tool, tool
 
-from openstream import AsyncSession, Result, SessionConfig, StepFinish, Text, ToolUse
+from llmloop import AsyncSession, Result, SessionConfig, StepFinish, Text, ToolUse
 
 # --- Unit tests for _strip_provider ---
 
@@ -387,41 +387,22 @@ def test_direct_backend_requires_base_url():
 # --- Integration tests (require real Azure API) ---
 
 
-def _load_env() -> dict[str, str]:
-    """Load .env from the shopkeep root."""
-    env_path = Path(__file__).parent.parent.parent / ".env"
-    env: dict[str, str] = {}
-    if env_path.exists():
-        for line in env_path.read_text().splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" in line:
-                key, _, value = line.partition("=")
-                env[key.strip()] = value.strip().strip('"').strip("'")
-    return env
+_TEST_API_KEY = os.environ.get("LLMLOOP_TEST_API_KEY", "")
+_TEST_BASE_URL = os.environ.get("LLMLOOP_TEST_BASE_URL", "")
+_HAS_CREDENTIALS = bool(_TEST_API_KEY and _TEST_BASE_URL)
 
 
 def _make_direct_config() -> SessionConfig:
-    """Create a direct-backend SessionConfig from .env."""
-    env = _load_env()
-    api_key = env.get("AI_GATEWAY_API_KEY") or os.environ.get("AI_GATEWAY_API_KEY")
-    base_url = (
-        env.get("AI_COMPLETIONS_FURL")
-        or os.environ.get("AI_COMPLETIONS_FURL")
-        or env.get("AI_COMPLETIONS_URL")
-        or os.environ.get("AI_COMPLETIONS_URL")
-    )
-    if not api_key or not base_url:
-        pytest.skip("AI_GATEWAY_API_KEY and AI_COMPLETIONS_FURL required in .env")
+    """Create a direct-backend SessionConfig from environment variables."""
     return SessionConfig(
         model="gpt-5.4",
         backend="direct",
-        api_key=api_key,
-        base_url=base_url,
+        api_key=_TEST_API_KEY,
+        base_url=_TEST_BASE_URL,
     )
 
 
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_direct_simple():
@@ -435,6 +416,7 @@ async def test_direct_simple():
         assert "hello" in combined or "hi" in combined or "hey" in combined
 
 
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_direct_tool_use():
@@ -448,6 +430,7 @@ async def test_direct_tool_use():
         assert any(e.tool == "read" for e in tool_events)
 
 
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_direct_multi_turn():
@@ -466,6 +449,7 @@ async def test_direct_multi_turn():
         assert "42" in combined
 
 
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_direct_result_event():
@@ -482,6 +466,7 @@ async def test_direct_result_event():
         assert last.steps >= 1
 
 
+@pytest.mark.skipif(not _HAS_CREDENTIALS, reason="LLMLOOP_TEST_API_KEY and LLMLOOP_TEST_BASE_URL required")
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_direct_step_finish_tokens():
