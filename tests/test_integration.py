@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import httpx
+import pytest
+
 from llmloop._agent import AgentDefinition, ToolRef
 from llmloop._direct import DirectClient
 from llmloop._invoke import invoke_agent
+from llmloop._session import AsyncSession, SyncSession
 from llmloop._tools import Tool, tool
-from llmloop.events import StepFinish, StepStart, Text, ToolUse
+from llmloop.events import Result, StepFinish, StepStart, Text, ToolUse
 
 from .conftest import direct_config, text_response, tool_call_response
 
@@ -185,3 +189,96 @@ async def test_invoke_agent_setup():
         assert len(session._config.tools) == 1
         assert session._config.tools[0].name == "lookup"
         assert session._config.tools[0] is lookup._tool
+
+
+async def test_token_accumulation_across_steps(mock_llm_responses):
+    """Token counts from multiple StepFinish events in one turn must accumulate."""
+    async def noop(x: str) -> str:
+        return "ok"
+
+    noop_tool = Tool(
+        name="noop",
+        description="No-op tool",
+        input_schema={
+            "type": "object",
+            "properties": {"x": {"type": "string"}},
+            "required": ["x"],
+        },
+        handler=noop,
+        inject=[],
+    )
+
+    # Two-step response: tool call (100+50 tokens), then text (200+80 tokens)
+    mock_client = mock_llm_responses(
+        tool_call_response("noop", {"x": "a"}, prompt_tokens=100, completion_tokens=50),
+        text_response("done", prompt_tokens=200, completion_tokens=80),
+    )
+
+    config = direct_config(tools=[noop_tool])
+
+    # Build AsyncSession and inject the mock http_client into its DirectClient
+    session = AsyncSession(config)
+    session._direct = DirectClient(
+        config, http_client=mock_client, tools=[noop_tool],
+    )
+
+    events = []
+    async for event in session.send("go"):
+        events.append(event)
+
+    result_events = [e for e in events if isinstance(e, Result)]
+    assert len(result_events) == 1
+    result = result_events[0]
+
+    # DirectClient emits running totals in each StepFinish (not per-step
+    # deltas). The first StepFinish has 100 input / 50 output, the second
+    # has 300 input / 130 output (100+200, 50+80). AsyncSession._send_direct
+    # accumulates these via +=, so the Result reflects the sum of all
+    # StepFinish values. Before the bug fix, = (assignment) meant only the
+    # last StepFinish's tokens were counted (300/130 instead of 400/180).
+    assert result.total_input_tokens == 400  # 100 + (100+200)
+    assert result.total_output_tokens == 180  # 50 + (50+80)
+
+    await session.close()
+
+
+def test_sync_session_streaming(mock_llm_responses):
+    """SyncSession.send() yields events incrementally (queue-based streaming)."""
+    mock_client = mock_llm_responses(text_response("hello back"))
+    config = direct_config()
+
+    with SyncSession(config) as session:
+        # Inject mock http_client into the inner AsyncSession's DirectClient
+        session._async_session._direct = DirectClient(
+            config, http_client=mock_client, tools=[],
+        )
+
+        events = list(session.send("hi"))
+
+    event_types = [type(e) for e in events]
+    assert StepStart in event_types
+    assert Text in event_types
+    assert StepFinish in event_types
+    assert Result in event_types
+
+    text_events = [e for e in events if isinstance(e, Text)]
+    assert text_events[0].text == "hello back"
+
+
+def test_sync_session_error_propagation(mock_llm_responses):
+    """Errors from the async producer propagate to the sync caller."""
+
+    def error_handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500, json={"error": "internal server error"})
+
+    error_client = httpx.AsyncClient(transport=httpx.MockTransport(error_handler))
+    config = direct_config()
+
+    with SyncSession(config) as session:
+        session._async_session._direct = DirectClient(
+            config, http_client=error_client, tools=[],
+        )
+
+        with pytest.raises(httpx.HTTPStatusError):
+            # Consume all events to trigger the error
+            list(session.send("hi"))
