@@ -7,9 +7,6 @@ description = "Typed streaming SDK for LLM tool-calling loops"
 dependencies = ["httpx"]
 keywords = ["rlsbl"]
 
-[project.scripts]
-llmloop-stop = "llmloop._stop:main"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
