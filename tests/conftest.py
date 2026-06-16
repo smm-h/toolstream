@@ -68,9 +68,9 @@ def direct_config(**overrides: Any) -> SessionConfig:
     """Build a SessionConfig suitable for DirectClient with mock http_client."""
     defaults: dict[str, Any] = dict(
         model="test-model",
-        backend="direct",
         api_key="test-key",
         base_url="https://mock-gateway.test/v1/chat/completions",
+        system_prompt="You are a test assistant.",
     )
     defaults.update(overrides)
     return SessionConfig(**defaults)

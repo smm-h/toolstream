@@ -45,7 +45,6 @@ async def test_tool_call_then_text(mock_llm_responses):
             "required": ["name"],
         },
         handler=greet,
-        server="test",
         inject=[],
     )
 
@@ -100,7 +99,6 @@ async def test_context_injection_end_to_end(mock_llm_responses):
             "required": ["item"],
         },
         handler=save_item,
-        server="test",
         inject=["db_conn"],
     )
 
@@ -141,7 +139,6 @@ async def test_tool_error_handling(mock_llm_responses):
             "required": ["x"],
         },
         handler=failing_tool,
-        server="test",
         inject=[],
     )
 
@@ -162,7 +159,7 @@ async def test_tool_error_handling(mock_llm_responses):
 
 
 async def test_invoke_agent_setup():
-    @tool("test-server")
+    @tool()
     async def lookup(query: str) -> str:
         """Look up information."""
         return f"Result for {query}"
