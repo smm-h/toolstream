@@ -1,21 +1,21 @@
 [project]
-name = "openstream"
+name = "llmloop"
 version = "0.1.0"
 requires-python = ">=3.11"
-description = "Python SDK for opencode's JSON streaming protocol"
+description = "Typed streaming SDK for LLM tool-calling loops"
 
 dependencies = ["httpx"]
 keywords = ["rlsbl"]
 
 [project.scripts]
-openstream-stop = "openstream._stop:main"
+llmloop-stop = "llmloop._stop:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["openstream"]
+packages = ["llmloop"]
 
 [dependency-groups]
 dev = ["pytest", "pytest-asyncio"]
