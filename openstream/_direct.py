@@ -25,8 +25,6 @@ _DEFAULT_SYSTEM_PROMPT = (
 
 _MAX_RETRIES = 1
 
-_BUILTIN_TOOL_NAMES = frozenset({"read", "write", "bash", "edit", "grep", "glob"})
-
 
 def _strip_provider(model: str) -> str:
     """Strip provider prefix from model name.
@@ -96,11 +94,12 @@ class DirectClient:
 
         # Build tool registry: start with built-ins, override with user tools
         builtin_tools = collect_tools(_builtin_tools)
-        self._builtin_names: frozenset[str] = _BUILTIN_TOOL_NAMES
+        self._builtin_names: set[str] = {t.name for t in builtin_tools}
         self._tools: dict[str, Tool] = {t.name: t for t in builtin_tools}
 
         if tools is not None:
             for t in tools:
+                self._builtin_names.discard(t.name)
                 self._tools[t.name] = t
 
         # Pre-compute API tool definitions
