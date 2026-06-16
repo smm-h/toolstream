@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ._tools import Tool
 
 
 @dataclass
@@ -15,3 +19,6 @@ class SessionConfig:
     agent: str | None = None  # --agent
     api_key: str | None = None  # for direct backend
     base_url: str | None = None  # for direct backend (full endpoint URL)
+    tools: list[Tool] | None = None  # tool objects, None = built-in defaults
+    tool_context: object | None = None  # for injection (Phase 5)
+    max_completion_tokens: int = 16384

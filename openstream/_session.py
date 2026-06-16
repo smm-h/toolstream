@@ -19,7 +19,12 @@ class AsyncSession:
         self._config = config
         self._backend = config.backend
         if config.backend == "direct":
-            self._direct = DirectClient(config)
+            self._direct = DirectClient(
+                config,
+                tools=config.tools,
+                tool_context=config.tool_context,
+                max_completion_tokens=config.max_completion_tokens,
+            )
             self._process: OpenCodeProcess | None = None
         else:
             self._direct = None
