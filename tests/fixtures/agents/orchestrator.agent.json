@@ -1,0 +1,7 @@
+{
+  "name": "orchestrator",
+  "version": "1.0",
+  "prompt_template": "You are an orchestrator. Task: {task}",
+  "description": "Test orchestrator agent",
+  "tools": [{"name": "read"}, {"name": "write"}]
+}

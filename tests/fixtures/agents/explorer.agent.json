@@ -1,0 +1,6 @@
+{
+  "name": "explorer",
+  "version": "1.0",
+  "prompt_template": "You are an explorer agent. Task: {task}",
+  "description": "Test explorer agent"
+}

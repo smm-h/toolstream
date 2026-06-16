@@ -1,4 +1,4 @@
-"""Tests for openstream._agent -- agent definition loading, discovery, and prompt resolution."""
+"""Tests for agent definition loading, discovery, and prompt resolution."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from openstream._agent import (
+from llmloop._agent import (
     AgentDefinition,
     AgentSandbox,
     ToolRef,
@@ -16,6 +16,8 @@ from openstream._agent import (
     resolve_prompt,
 )
 
+
+FIXTURES_DIR = Path(__file__).parent / "fixtures" / "agents"
 
 # ============================================================
 # Helpers
@@ -214,9 +216,9 @@ class TestDiscoverAgents:
         assert len(agents) == 1
         assert agents[0].name == "local-agent"
 
-    def test_discover_from_package(self):
-        """Real shopkeep_core.agents package yields known agents."""
-        agents = discover_agents(packages=["shopkeep_core.agents"])
+    def test_discover_from_fixtures(self):
+        """Agent fixtures in tests/fixtures/agents/ are discovered."""
+        agents = discover_agents(paths=[FIXTURES_DIR])
 
         names = {a.name for a in agents}
         assert "explorer" in names
@@ -224,7 +226,7 @@ class TestDiscoverAgents:
         assert len(agents) >= 2
 
     def test_discover_dedup(self, tmp_path):
-        """First-seen wins: paths entry overrides same-name package entry."""
+        """First-seen wins: paths entry listed first overrides later entry."""
         # Create a local "explorer" with a different version to distinguish it.
         _write_agent_json(
             tmp_path,
@@ -235,10 +237,7 @@ class TestDiscoverAgents:
             ),
         )
 
-        agents = discover_agents(
-            paths=[tmp_path],
-            packages=["shopkeep_core.agents"],
-        )
+        agents = discover_agents(paths=[tmp_path, FIXTURES_DIR])
 
         explorers = [a for a in agents if a.name == "explorer"]
         assert len(explorers) == 1
