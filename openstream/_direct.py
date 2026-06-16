@@ -252,16 +252,33 @@ class DirectClient:
         if tool_obj is None:
             return f"Error: unknown tool '{name}'"
 
-        try:
-            if name in self._builtin_names:
-                # Built-in tools get cwd injected
+        if name in self._builtin_names:
+            try:
                 result = await tool_obj.handler(**args, cwd=self._cwd)
-            else:
-                # User tools get only the LLM-provided arguments
+            except Exception as e:
+                return f"Error: {e}"
+        else:
+            # User tools: inject context params, then call handler
+            for param_name in tool_obj.inject:
+                if self._tool_context is None:
+                    raise RuntimeError(
+                        f"Tool '{name}' requires tool_context "
+                        f"(inject=['{param_name}']) but tool_context is None"
+                    )
+                try:
+                    args[param_name] = getattr(self._tool_context, param_name)
+                except AttributeError:
+                    raise AttributeError(
+                        f"tool_context ({type(self._tool_context).__name__}) "
+                        f"has no attribute '{param_name}' "
+                        f"required by tool '{name}'"
+                    )
+            try:
                 result = await tool_obj.handler(**args)
-            return result
-        except Exception as e:
-            return f"Error: {e}"
+            except Exception as e:
+                return f"Error: {e}"
+
+        return result
 
     async def close(self) -> None:
         """Close the HTTP client if we own it."""
