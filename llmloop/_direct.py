@@ -1,4 +1,4 @@
-"""Direct LLM API client via AI Gateway -- replaces the opencode subprocess."""
+"""Direct LLM API client via AI Gateway."""
 
 from __future__ import annotations
 
@@ -15,13 +15,6 @@ from . import _builtin_tools
 from ._tools import Tool, collect_tools
 from .config import SessionConfig
 from .events import Error, StepFinish, StepStart, Text, ToolUse
-
-_DEFAULT_SYSTEM_PROMPT = (
-    "You are a coding assistant. You have access to tools for reading files, "
-    "writing files, editing files, running bash commands, searching with grep, "
-    "and finding files with glob. Use these tools to accomplish the user's task. "
-    "Work in the directory: {cwd}"
-)
 
 _MAX_RETRIES = 1
 
@@ -84,6 +77,12 @@ class DirectClient:
         self._tool_context = tool_context
         self._owns_client = http_client is None
 
+        # Builtin context for inject resolution
+        self._builtin_context: dict[str, Any] = {
+            "cwd": self._cwd,
+            "env": config.tool_env,
+        }
+
         # HTTP client: reuse injected or create one
         if http_client is not None:
             self._client = http_client
@@ -106,8 +105,7 @@ class DirectClient:
         self._tool_definitions = _build_tool_definitions(self._tools)
 
         # Build system prompt
-        system_prompt = config.system_prompt or _DEFAULT_SYSTEM_PROMPT.format(cwd=self._cwd)
-        self._messages.append({"role": "system", "content": system_prompt})
+        self._messages.append({"role": "system", "content": config.system_prompt})
 
     @property
     def session_id(self) -> str:
@@ -220,13 +218,14 @@ class DirectClient:
             "x-api-key": self._api_key,
             "Content-Type": "application/json",
         }
-        body = {
+        body: dict[str, Any] = {
             "model": self._model,
             "messages": messages,
             "tools": self._tool_definitions,
             "max_completion_tokens": self._max_completion_tokens,
-            "metadata": {"service": "shopkeep"},
         }
+        if self._config.metadata:
+            body["metadata"] = self._config.metadata
 
         last_error: Exception | None = None
         for attempt in range(_MAX_RETRIES + 1):
@@ -252,8 +251,10 @@ class DirectClient:
             return f"Error: unknown tool '{name}'"
 
         if name in self._builtin_names:
+            # Resolve inject params from builtin context
+            kwargs = {p: self._builtin_context[p] for p in tool_obj.inject}
             try:
-                result = await tool_obj.handler(**args, cwd=self._cwd)
+                result = await tool_obj.handler(**args, **kwargs)
             except Exception as e:
                 return f"Error: {e}"
         else:
