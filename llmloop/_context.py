@@ -1,18 +1,14 @@
-"""PipelineContext -- root context object for orchestrator sessions."""
+"""ToolContext -- base class for tool dependency injection."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass
-class PipelineContext:
-    """Root context for orchestrator sessions.
+class ToolContext:
+    """Base class for tool dependency injection.
 
-    Holds all injectable dependencies as named attributes.
-    Tools resolve inject params via getattr on this object.
+    Subclass with your application's injectable attributes.
+    Tools declare inject parameters that are resolved via getattr on this object.
     """
-
-    spawn_ctx: Any = None
-    browser_ctx: Any = None
