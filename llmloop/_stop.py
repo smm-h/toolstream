@@ -1,8 +1,8 @@
-"""Stop orphaned opencode processes spawned by openstream.
+"""Stop orphaned opencode processes spawned by llmloop.
 
 Usage:
-    openstream-stop          # list and terminate all opencode child processes
-    openstream-stop --all    # terminate ALL opencode processes (not just children)
+    llmloop-stop          # list and terminate all opencode child processes
+    llmloop-stop --all    # terminate ALL opencode processes (not just children)
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ def _find_opencode_processes(*, all_users: bool = False) -> list[dict[str, str |
     """Find running opencode processes.
 
     When all_users is False, only finds processes whose parent is the current
-    process tree (i.e., likely spawned by openstream). When True, finds all
+    process tree (i.e., likely spawned by llmloop). When True, finds all
     opencode processes owned by the current user.
     """
     results = []
@@ -48,10 +48,10 @@ def _find_opencode_processes(*, all_users: bool = False) -> list[dict[str, str |
             if "opencode" not in cmdline:
                 continue
 
-            # Must be an "opencode run" invocation with --format json (spawned by openstream)
-            is_openstream_child = "--format" in cmdline and "json" in cmdline and "run" in cmdline
+            # Must be an "opencode run" invocation with --format json (spawned by llmloop)
+            is_llmloop_child = "--format" in cmdline and "json" in cmdline and "run" in cmdline
 
-            if not all_users and not is_openstream_child:
+            if not all_users and not is_llmloop_child:
                 continue
 
             results.append({

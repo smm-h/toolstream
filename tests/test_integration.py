@@ -1,14 +1,14 @@
-"""Integration tests exercising the full openstream stack with mock LLM responder."""
+"""Integration tests exercising the full llmloop stack with mock LLM responder."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from openstream._agent import AgentDefinition, ToolRef
-from openstream._direct import DirectClient
-from openstream._invoke import invoke_agent
-from openstream._tools import Tool, tool
-from openstream.events import StepFinish, StepStart, Text, ToolUse
+from llmloop._agent import AgentDefinition, ToolRef
+from llmloop._direct import DirectClient
+from llmloop._invoke import invoke_agent
+from llmloop._tools import Tool, tool
+from llmloop.events import StepFinish, StepStart, Text, ToolUse
 
 from .conftest import direct_config, text_response, tool_call_response
 

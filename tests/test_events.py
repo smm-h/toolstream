@@ -1,4 +1,4 @@
-from openstream.events import Error, Result, StepFinish, StepStart, Text, ToolUse
+from llmloop.events import Error, Result, StepFinish, StepStart, Text, ToolUse
 
 
 class TestStepStart:

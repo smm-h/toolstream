@@ -1,4 +1,4 @@
-"""Tests for openstream._builtin_tools -- standalone tool implementations."""
+"""Tests for llmloop._builtin_tools -- standalone tool implementations."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from openstream._builtin_tools import (
+from llmloop._builtin_tools import (
     _resolve_path,
     bash,
     edit,
@@ -142,7 +142,7 @@ class TestBash:
         assert "mytoken" in result
 
     async def test_env_blocklist_is_frozenset(self):
-        from openstream._builtin_tools import ENV_BLOCKLIST
+        from llmloop._builtin_tools import ENV_BLOCKLIST
         assert isinstance(ENV_BLOCKLIST, frozenset)
         assert "SUPABASE_DB_PASSWORD" in ENV_BLOCKLIST
         assert "SHOPKEEP_DATABASE_URL" in ENV_BLOCKLIST

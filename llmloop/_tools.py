@@ -1,4 +1,4 @@
-"""Tool registration system for openstream.
+"""Tool registration system for llmloop.
 
 Provides the @tool decorator for marking functions as LLM-callable tools,
 and collect_tools() for discovering decorated functions across modules.

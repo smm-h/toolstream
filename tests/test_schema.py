@@ -1,4 +1,4 @@
-"""Tests for openstream._schema -- JSON Schema generation from type hints."""
+"""Tests for llmloop._schema -- JSON Schema generation from type hints."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import enum
 import functools
 from typing import Literal, Optional, TypedDict
 
-from openstream._schema import (
+from llmloop._schema import (
     _generate_schema,
     _parse_param_descriptions,
     _type_to_schema,

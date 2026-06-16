@@ -1,19 +1,19 @@
-"""Tests for openstream._invoke -- agent invocation helpers."""
+"""Tests for llmloop._invoke -- agent invocation helpers."""
 
 from __future__ import annotations
 
 import pytest
 
-from openstream._agent import AgentDefinition, ToolRef
-from openstream._invoke import (
+from llmloop._agent import AgentDefinition, ToolRef
+from llmloop._invoke import (
     _build_invocation_config,
     _filter_tools,
     invoke_agent,
     invoke_agent_sync,
 )
-from openstream._session import AsyncSession, SyncSession
-from openstream._tools import Tool, tool
-from openstream.config import SessionConfig
+from llmloop._session import AsyncSession, SyncSession
+from llmloop._tools import Tool, tool
+from llmloop.config import SessionConfig
 
 
 # ============================================================

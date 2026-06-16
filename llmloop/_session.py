@@ -6,7 +6,7 @@ import threading
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
-logger = logging.getLogger("openstream")
+logger = logging.getLogger("llmloop")
 
 from ._direct import DirectClient
 from ._process import OpenCodeProcess

@@ -1,7 +1,7 @@
 import json
 
-from openstream._protocol import parse_event
-from openstream.events import Error, StepFinish, StepStart, Text, ToolUse
+from llmloop._protocol import parse_event
+from llmloop.events import Error, StepFinish, StepStart, Text, ToolUse
 
 
 class TestParseStepStart:

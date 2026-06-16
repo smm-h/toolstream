@@ -8,10 +8,10 @@ from typing import Any
 import httpx
 import pytest
 
-from openstream._context import PipelineContext
-from openstream._direct import DirectClient
-from openstream._tools import Tool
-from openstream.config import SessionConfig
+from llmloop._context import PipelineContext
+from llmloop._direct import DirectClient
+from llmloop._tools import Tool
+from llmloop.config import SessionConfig
 
 
 # -- helpers --

@@ -1,6 +1,6 @@
 import pytest
 
-from openstream import AsyncSession, Result, SessionConfig, Text, ToolUse
+from llmloop import AsyncSession, Result, SessionConfig, Text, ToolUse
 
 CONFIG = SessionConfig(
     model="gpt-5.4",

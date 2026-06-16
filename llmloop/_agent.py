@@ -129,7 +129,7 @@ def discover_agents(
 
     Search order (first occurrence of a name wins):
 
-    1. ``<cwd>/.openstream/agents/*.agent.json``
+    1. ``<cwd>/.llmloop/agents/*.agent.json``
     2. Each directory in *paths*: ``<dir>/*.agent.json``
     3. Each Python package in *packages*: resources matching ``*.agent.json``
 
@@ -140,7 +140,7 @@ def discover_agents(
 
     # 1. cwd-local agents
     if cwd is not None:
-        agents_dir = Path(cwd) / ".openstream" / "agents"
+        agents_dir = Path(cwd) / ".llmloop" / "agents"
         if agents_dir.is_dir():
             for f in sorted(agents_dir.glob("*.agent.json")):
                 _try_load(f, seen)
