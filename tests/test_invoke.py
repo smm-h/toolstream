@@ -39,7 +39,7 @@ def _make_definition(
 
 
 def _make_config(**overrides):
-    defaults = dict(model="base-model", backend="opencode", cwd="/tmp")
+    defaults = dict(model="base-model", api_key="test-key", base_url="https://test.example.com", system_prompt="test prompt", cwd="/tmp")
     defaults.update(overrides)
     return SessionConfig(**defaults)
 
@@ -117,7 +117,7 @@ class TestFilterTools:
     def test_tool_decorated_handler_uses_precomputed(self):
         """A @tool-decorated handler reuses its precomputed _tool object."""
 
-        @tool("my-server")
+        @tool()
         def decorated_fn(x: int) -> str:
             """A decorated tool."""
 
@@ -129,7 +129,7 @@ class TestFilterTools:
         assert result[0] is decorated_fn._tool
 
     def test_plain_handler_gets_auto_schema(self):
-        """A plain function gets a Tool with server='dynamic', inject=[], and correct schema."""
+        """A plain function gets a Tool with inject=[] and correct schema."""
 
         def my_plain(name: str, count: int = 1) -> str:
             """Do something."""
@@ -141,7 +141,6 @@ class TestFilterTools:
         assert len(result) == 1
         t = result[0]
         assert t.name == "my_plain"
-        assert t.server == "dynamic"
         assert t.inject == []
         assert t.input_schema["type"] == "object"
         assert "name" in t.input_schema["properties"]
@@ -177,7 +176,7 @@ class TestFilterTools:
     def test_mixed_decorated_and_plain(self):
         """One @tool-decorated and one plain handler both resolve correctly."""
 
-        @tool("srv")
+        @tool()
         def decorated(x: int) -> str:
             """Decorated tool."""
 
@@ -196,7 +195,6 @@ class TestFilterTools:
 
         by_name = {t.name: t for t in result}
         assert by_name["decorated"] is decorated._tool
-        assert by_name["plain"].server == "dynamic"
         assert by_name["plain"].description == "Plain handler."
 
 
@@ -239,24 +237,32 @@ class TestBuildInvocationConfig:
         assert result.model == "cfg-model"
 
     def test_config_fields_carried_through(self):
-        """backend, cwd, api_key, base_url, tool_context, max_completion_tokens are preserved."""
+        """cwd, api_key, base_url, system_prompt, tool_context, tool_env, metadata, sandbox, max_completion_tokens are preserved."""
         ctx = object()
+        env = {"FOO": "bar"}
+        meta = {"session": "abc"}
+        sandbox_cfg = {"enabled": True}
         config = _make_config(
-            backend="direct",
             cwd="/some/path",
             api_key="sk-test",
             base_url="https://api.example.com",
+            system_prompt="base prompt",
             tool_context=ctx,
+            tool_env=env,
+            metadata=meta,
+            sandbox=sandbox_cfg,
             max_completion_tokens=8192,
         )
         definition = _make_definition(prompt_template="prompt")
         result = _build_invocation_config(definition, config)
 
-        assert result.backend == "direct"
         assert result.cwd == "/some/path"
         assert result.api_key == "sk-test"
         assert result.base_url == "https://api.example.com"
         assert result.tool_context is ctx
+        assert result.tool_env is env
+        assert result.metadata is meta
+        assert result.sandbox is sandbox_cfg
         assert result.max_completion_tokens == 8192
 
     def test_tools_none_when_no_declaration(self):
@@ -306,7 +312,7 @@ class TestInvokeAgent:
             version="1.0",
             model=None,
         )
-        config = _make_config(model="test-model", backend="opencode", cwd="/tmp")
+        config = _make_config(model="test-model", cwd="/tmp")
 
         async with invoke_agent(
             definition, config, variables={"role": "assistant"}
@@ -322,7 +328,7 @@ class TestInvokeAgent:
             version="1.0",
             model=None,
         )
-        config = _make_config(model="test-model", backend="opencode", cwd="/tmp")
+        config = _make_config(model="test-model", cwd="/tmp")
 
         async with invoke_agent(
             definition, config, variables={"role": "assistant"}
@@ -344,7 +350,7 @@ class TestInvokeAgentSync:
             version="1.0",
             model=None,
         )
-        config = _make_config(model="test-model", backend="opencode", cwd="/tmp")
+        config = _make_config(model="test-model", cwd="/tmp")
 
         with invoke_agent_sync(
             definition, config, variables={"role": "assistant"}
@@ -359,7 +365,7 @@ class TestInvokeAgentSync:
             version="1.0",
             model=None,
         )
-        config = _make_config(model="test-model", backend="opencode", cwd="/tmp")
+        config = _make_config(model="test-model", cwd="/tmp")
 
         with invoke_agent_sync(
             definition, config, variables={"role": "assistant"}
