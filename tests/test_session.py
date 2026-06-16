@@ -12,9 +12,9 @@ _HAS_CREDENTIALS = bool(_TEST_API_KEY and _TEST_BASE_URL)
 def _make_config() -> SessionConfig:
     return SessionConfig(
         model="gpt-5.4",
-        backend="direct",
         api_key=_TEST_API_KEY,
         base_url=_TEST_BASE_URL,
+        system_prompt="You are a helpful coding assistant.",
     )
 
 
