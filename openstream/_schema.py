@@ -51,7 +51,18 @@ def _type_to_schema(annotation: type) -> dict:
 
     # Literal["a", "b"]
     if origin is typing.Literal:
-        return {"type": "string", "enum": list(args)}
+        values = list(args)
+        # Infer JSON Schema type from the literal values
+        value_types = {type(v) for v in values}
+        if value_types == {int}:
+            schema_type = "integer"
+        elif value_types == {float}:
+            schema_type = "number"
+        elif value_types == {bool}:
+            schema_type = "boolean"
+        else:
+            schema_type = "string"
+        return {"type": schema_type, "enum": values}
 
     # Enum subclass
     if isinstance(annotation, type) and issubclass(annotation, enum.Enum):

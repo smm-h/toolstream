@@ -153,6 +153,18 @@ class TestLiteralType:
         schema = _type_to_schema(Literal["only"])
         assert schema == {"type": "string", "enum": ["only"]}
 
+    def test_int_literal(self):
+        schema = _type_to_schema(Literal[1, 2])
+        assert schema == {"type": "integer", "enum": [1, 2]}
+
+    def test_bool_literal(self):
+        schema = _type_to_schema(Literal[True, False])
+        assert schema == {"type": "boolean", "enum": [True, False]}
+
+    def test_mixed_literal(self):
+        schema = _type_to_schema(Literal["a", 1])
+        assert schema == {"type": "string", "enum": ["a", 1]}
+
 
 class TestEnumType:
     def test_enum_values(self):
