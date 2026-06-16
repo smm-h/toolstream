@@ -8,6 +8,7 @@ by the DirectClient's dispatch loop).
 from __future__ import annotations
 
 import asyncio
+import os
 import shlex
 from glob import glob as _stdlib_glob
 from pathlib import Path
@@ -15,6 +16,15 @@ from pathlib import Path
 from ._tools import tool
 
 _MAX_OUTPUT_CHARS = 50_000
+
+ENV_BLOCKLIST = frozenset({
+    "SUPABASE_DB_PASSWORD",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SHOPKEEP_DATABASE_URL",
+    "SHOPKEEP_AI_GATEWAY_API_KEY",
+    "AI_GATEWAY_API_KEY",
+    "SHOPKEEP_ANTHROPIC_API_KEY",
+})
 
 
 def _resolve_path(file_path: str, cwd: str) -> Path:
@@ -46,11 +56,13 @@ async def write(file_path: str, content: str, cwd: str) -> str:
 @tool("builtin", inject=["cwd"])
 async def bash(command: str, cwd: str, timeout: int = 120) -> str:
     """Run a shell command and return stdout+stderr combined."""
+    filtered_env = {k: v for k, v in os.environ.items() if k not in ENV_BLOCKLIST}
     proc = await asyncio.create_subprocess_shell(
         command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
         cwd=cwd,
+        env=filtered_env,
     )
     try:
         stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)

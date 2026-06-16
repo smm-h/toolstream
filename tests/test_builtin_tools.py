@@ -131,6 +131,23 @@ class TestBash:
         result = await bash("pwd", cwd=str(tmp_path))
         assert str(tmp_path) in result
 
+    async def test_blocklisted_var_hidden(self, tmp_path: Path, monkeypatch):
+        monkeypatch.setenv("SUPABASE_DB_PASSWORD", "secret")
+        result = await bash("echo $SUPABASE_DB_PASSWORD", cwd=str(tmp_path))
+        assert "secret" not in result
+
+    async def test_non_blocklisted_var_accessible(self, tmp_path: Path, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "mytoken")
+        result = await bash("echo $GITHUB_TOKEN", cwd=str(tmp_path))
+        assert "mytoken" in result
+
+    async def test_env_blocklist_is_frozenset(self):
+        from openstream._builtin_tools import ENV_BLOCKLIST
+        assert isinstance(ENV_BLOCKLIST, frozenset)
+        assert "SUPABASE_DB_PASSWORD" in ENV_BLOCKLIST
+        assert "SHOPKEEP_DATABASE_URL" in ENV_BLOCKLIST
+        assert "AI_GATEWAY_API_KEY" in ENV_BLOCKLIST
+
 
 # ============================================================
 # edit
