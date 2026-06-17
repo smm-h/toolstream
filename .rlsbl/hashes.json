@@ -6,6 +6,6 @@
   ".rlsbl/hooks/pre-checks.sh": "60c57d4563263124530e6f33aca77550ea2161ad3b33b3ba6ad1c03fea9eb6e2",
   ".rlsbl/hooks/pre-release.sh": "799fe9a8ed742f5b4f7bc32856df8487b05ab28a37aaa0e9ecf854ea289c5305",
   ".rlsbl/hooks/post-release.sh": "a7548df0ce46ee421865afbe50b0c327b301ad003519aa2f2521edb484c3865c",
-  ".rlsbl/changes/unreleased.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  ".rlsbl/changes/unreleased.jsonl": "11f98a6a99eb629a9b201adf81d5de7c4df6cfdac5fbf945dd62223ad1b397a8",
   ".rlsbl/lint/python.toml": "9cfbcef2e010d5fad243437bf2fd8df54a1fae70ee0762f9d11da70fe207501c"
 }
