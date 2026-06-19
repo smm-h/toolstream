@@ -77,7 +77,7 @@ class TestLoadAgent:
                         },
                         "required": ["command"],
                     },
-                    "server": "shopkeep-tools",
+                    "server": "test-tools",
                 },
                 {
                     "name": "navigate",
@@ -89,7 +89,7 @@ class TestLoadAgent:
                         },
                         "required": ["url"],
                     },
-                    "server": "shopkeep-crawler",
+                    "server": "test-crawler",
                 },
             ]
         )
