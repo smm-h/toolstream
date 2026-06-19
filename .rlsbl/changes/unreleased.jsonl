@@ -1,2 +1,3 @@
 {"commits":["bc911d80fac7133e41bab62b18031cb61dc43b50"],"user_facing":true,"description":"**New feature.** Added README with quick start guide, tool registration, agent definitions, and event type reference.","type":"feature"}
 {"commits":["8abf8ff92ce97298605a242c8b1bd82ea2c2129a"],"user_facing":true,"description":"**New feature.** Added integration tests covering multi-round tool calling, multi-turn conversations, agent invocation, and concurrent tool dispatch.","type":"feature"}
+{"commits":["86d4863a5aa22f012b2bb7fedb407d12eb46ddde","6c511238793fb909e43bd7ca731b5bc77a7b36b8"],"user_facing":false}
