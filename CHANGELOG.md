@@ -2,6 +2,15 @@
 
 # Changelog
 
+## 0.1.1
+
+Integration tests, README, cleanup
+
+### Features
+
+- **New feature.** Added README with quick start guide, tool registration, agent definitions, and event type reference.
+- **New feature.** Added integration tests covering multi-round tool calling, multi-turn conversations, agent invocation, and concurrent tool dispatch.
+
 ## 0.1.0
 
 Initial release: typed streaming SDK for LLM tool-calling loops
