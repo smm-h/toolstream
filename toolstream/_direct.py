@@ -203,7 +203,7 @@ class DirectClient:
                 self._messages.append({
                     "role": "tool",
                     "tool_call_id": tc["id"],
-                    "content": result,
+                    "content": result if isinstance(result, str) else json.dumps(result),
                 })
 
             # Yield StepFinish for this tool-calling round
