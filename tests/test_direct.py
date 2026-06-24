@@ -383,6 +383,87 @@ def test_direct_backend_requires_base_url():
         ))
 
 
+# --- auth_style tests ---
+
+
+def test_missing_auth_style_raises():
+    """DirectClient raises ValueError when api_key is set but auth_style is None."""
+    with pytest.raises(ValueError, match="auth_style is required"):
+        DirectClient(SessionConfig(
+            model="gpt-5.4",
+            api_key="test-key",
+            base_url="https://test-gateway.example.com",
+            system_prompt="test",
+            auth_style=None,
+        ))
+
+
+def test_invalid_auth_style_raises():
+    """DirectClient raises ValueError for unrecognized auth_style values."""
+    with pytest.raises(ValueError, match="must be 'bearer' or 'x-api-key'"):
+        DirectClient(SessionConfig(
+            model="gpt-5.4",
+            api_key="test-key",
+            base_url="https://test-gateway.example.com",
+            system_prompt="test",
+            auth_style="invalid",
+        ))
+
+
+@pytest.mark.asyncio
+async def test_bearer_auth_header(tmp_path: Path):
+    """auth_style='bearer' sends Authorization: Bearer header."""
+    captured_headers: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_headers.update(request.headers)
+        from .conftest import text_response
+        return httpx.Response(200, json=text_response("hello"))
+
+    mock_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    config = SessionConfig(
+        model="gpt-5.4",
+        api_key="my-secret-key",
+        base_url="https://api.openai.com/v1/chat/completions",
+        system_prompt="test",
+        cwd=str(tmp_path),
+        auth_style="bearer",
+    )
+    client = DirectClient(config, http_client=mock_client)
+    # Drive one completion to capture headers
+    async for _ in client.send("hi"):
+        pass
+    assert captured_headers.get("authorization") == "Bearer my-secret-key"
+    assert "x-api-key" not in captured_headers
+
+
+@pytest.mark.asyncio
+async def test_x_api_key_auth_header(tmp_path: Path):
+    """auth_style='x-api-key' sends x-api-key header."""
+    captured_headers: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_headers.update(request.headers)
+        from .conftest import text_response
+        return httpx.Response(200, json=text_response("hello"))
+
+    mock_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    config = SessionConfig(
+        model="gpt-5.4",
+        api_key="my-gateway-key",
+        base_url="https://gateway.example.com/v1/chat/completions",
+        system_prompt="test",
+        cwd=str(tmp_path),
+        auth_style="x-api-key",
+    )
+    client = DirectClient(config, http_client=mock_client)
+    # Drive one completion to capture headers
+    async for _ in client.send("hi"):
+        pass
+    assert captured_headers.get("x-api-key") == "my-gateway-key"
+    assert "authorization" not in captured_headers
+
+
 # --- Integration tests (require real Azure API) ---
 
 
