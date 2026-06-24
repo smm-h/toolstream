@@ -89,6 +89,7 @@ def _build_invocation_config(
         max_completion_tokens=config.max_completion_tokens,
         sandbox=config.sandbox,
         metadata=config.metadata,
+        auth_style=config.auth_style,
     )
 
 
