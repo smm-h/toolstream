@@ -24,3 +24,4 @@ class SessionConfig:
     max_completion_tokens: int = 16384
     sandbox: AgentSandbox | None = None
     metadata: dict[str, str] | None = None
+    auth_style: str | None = None

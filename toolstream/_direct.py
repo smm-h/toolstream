@@ -65,6 +65,15 @@ class DirectClient:
             raise ValueError("api_key is required for direct backend")
         if not config.base_url:
             raise ValueError("base_url is required for direct backend")
+        if config.api_key and config.auth_style is None:
+            raise ValueError(
+                "auth_style is required when api_key is set. "
+                "Use 'bearer' for OpenAI or 'x-api-key' for gateway."
+            )
+        if config.auth_style is not None and config.auth_style not in ("bearer", "x-api-key"):
+            raise ValueError(
+                f"auth_style must be 'bearer' or 'x-api-key', got {config.auth_style!r}"
+            )
 
         self._config = config
         self._base_url = config.base_url.rstrip("/")
@@ -214,10 +223,11 @@ class DirectClient:
     async def _chat_completion(self, messages: list[dict]) -> dict:
         """Call LLM chat completions via AI Gateway with timeout and retry."""
         url = self._base_url
-        headers = {
-            "x-api-key": self._api_key,
-            "Content-Type": "application/json",
-        }
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+        if self._config.auth_style == "bearer":
+            headers["Authorization"] = f"Bearer {self._api_key}"
+        elif self._config.auth_style == "x-api-key":
+            headers["x-api-key"] = self._api_key
         body: dict[str, Any] = {
             "model": self._model,
             "messages": messages,
