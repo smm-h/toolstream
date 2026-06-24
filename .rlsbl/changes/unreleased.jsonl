@@ -1,1 +1,2 @@
 {"commits":["32aaa6a9011d1281df9928ef43cf8acd3f61b3a4","de7ea373b9f6f774f03a8a5674f667b1f4e943c7","9b083b27dbb87d6556ac9102b001314f6ae47c3e","9ef3ac4d0240d6bff804044757677f47dbaf4a65"],"user_facing":true,"description":"**auth_style required.** SessionConfig now requires auth_style when api_key is set. Supports 'bearer' (OpenAI) and 'x-api-key' (gateway).","type":"breaking"}
+{"commits":["5852eabe46bcaaf1b1d45e5edf8e7b74f713deb1"],"user_facing":true,"description":"**OpenAI compatibility.** Tool result content is now JSON-serialized when non-string.","type":"fix"}
