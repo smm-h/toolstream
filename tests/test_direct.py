@@ -38,6 +38,7 @@ def _base_config(tmp_path: Path) -> SessionConfig:
         base_url="https://test-gateway.example.com",
         system_prompt="You are a test assistant.",
         cwd=str(tmp_path),
+        auth_style="x-api-key",
     )
 
 
@@ -397,6 +398,7 @@ def _make_direct_config() -> SessionConfig:
         api_key=_TEST_API_KEY,
         base_url=_TEST_BASE_URL,
         system_prompt="You are a helpful coding assistant.",
+        auth_style="x-api-key",
     )
 
 

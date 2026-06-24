@@ -39,7 +39,7 @@ def _make_definition(
 
 
 def _make_config(**overrides):
-    defaults = dict(model="base-model", api_key="test-key", base_url="https://test.example.com", system_prompt="test prompt", cwd="/tmp")
+    defaults = dict(model="base-model", api_key="test-key", base_url="https://test.example.com", system_prompt="test prompt", cwd="/tmp", auth_style="x-api-key")
     defaults.update(overrides)
     return SessionConfig(**defaults)
 
@@ -237,7 +237,7 @@ class TestBuildInvocationConfig:
         assert result.model == "cfg-model"
 
     def test_config_fields_carried_through(self):
-        """cwd, api_key, base_url, system_prompt, tool_context, tool_env, metadata, sandbox, max_completion_tokens are preserved."""
+        """cwd, api_key, base_url, system_prompt, tool_context, tool_env, metadata, sandbox, max_completion_tokens, auth_style are preserved."""
         ctx = object()
         env = {"FOO": "bar"}
         meta = {"session": "abc"}
@@ -252,6 +252,7 @@ class TestBuildInvocationConfig:
             metadata=meta,
             sandbox=sandbox_cfg,
             max_completion_tokens=8192,
+            auth_style="bearer",
         )
         definition = _make_definition(prompt_template="prompt")
         result = _build_invocation_config(definition, config)
@@ -264,6 +265,7 @@ class TestBuildInvocationConfig:
         assert result.metadata is meta
         assert result.sandbox is sandbox_cfg
         assert result.max_completion_tokens == 8192
+        assert result.auth_style == "bearer"
 
     def test_tools_none_when_no_declaration(self):
         """When definition.tools is None, result.tools is None."""

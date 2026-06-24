@@ -37,6 +37,7 @@ def _make_config() -> SessionConfig:
         api_key="test-key",
         base_url="http://localhost:9999/v1/chat/completions",
         system_prompt="test",
+        auth_style="x-api-key",
     )
 
 

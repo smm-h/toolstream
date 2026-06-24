@@ -15,6 +15,7 @@ def _make_config() -> SessionConfig:
         api_key=_TEST_API_KEY,
         base_url=_TEST_BASE_URL,
         system_prompt="You are a helpful coding assistant.",
+        auth_style="x-api-key",
     )
 
 

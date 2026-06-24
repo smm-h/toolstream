@@ -71,6 +71,7 @@ def direct_config(**overrides: Any) -> SessionConfig:
         api_key="test-key",
         base_url="https://mock-gateway.test/v1/chat/completions",
         system_prompt="You are a test assistant.",
+        auth_style="x-api-key",
     )
     defaults.update(overrides)
     return SessionConfig(**defaults)
