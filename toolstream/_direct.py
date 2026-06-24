@@ -143,10 +143,12 @@ class DirectClient:
             choice = response["choices"][0]
             assistant_msg = choice["message"]
 
-            # Build the message dict to append to conversation
-            msg_to_append: dict = {"role": "assistant"}
-            if assistant_msg.get("content"):
-                msg_to_append["content"] = assistant_msg["content"]
+            # Build the message dict to append to conversation.
+            # OpenAI requires content (even if null) when tool_calls are present.
+            msg_to_append: dict = {
+                "role": "assistant",
+                "content": assistant_msg.get("content"),
+            }
             if assistant_msg.get("tool_calls"):
                 msg_to_append["tool_calls"] = assistant_msg["tool_calls"]
             self._messages.append(msg_to_append)
