@@ -1,0 +1,4 @@
+{"commits":["b28c152b491c844da718e8cc1d17bc4f68cc1e6c"],"user_facing":true,"description":"**Breaking.** StepFinish now emits per-step token deltas from each API response instead of running totals. Consumers that accumulated totals across steps will now get correct per-step values directly.","type":"breaking"}
+{"commits":["c7fc6878af34545c21cb80f19f6a214ce274f876"],"user_facing":true,"description":"**Retry with backoff.** HTTP requests now retry up to 3 times on transient errors (429, 503, timeouts) with exponential backoff and Retry-After header support.","type":"feature"}
+{"commits":["baa7b7fdfc82a32f627fb16b6bda36461a0d5d97"],"user_facing":true,"description":"**Pluggable history strategy.** New HistoryStrategy protocol with UnboundedHistory (default, preserves existing behavior) and TokenBudgetHistory (drops oldest non-system messages when approaching token budget).","type":"feature"}
+{"commits":["58ecf57a83429f8c477f425afaf81adfc98974b3"],"user_facing":false}
