@@ -2,6 +2,19 @@
 
 # Changelog
 
+## 0.3.0
+
+Per-step token deltas, retry with backoff, pluggable history strategy.
+
+### Breaking
+
+- **Breaking.** StepFinish now emits per-step token deltas from each API response instead of running totals. Consumers that accumulated totals across steps will now get correct per-step values directly.
+
+### Features
+
+- **Retry with backoff.** HTTP requests now retry up to 3 times on transient errors (429, 503, timeouts) with exponential backoff and Retry-After header support.
+- **Pluggable history strategy.** New HistoryStrategy protocol with UnboundedHistory (default, preserves existing behavior) and TokenBudgetHistory (drops oldest non-system messages when approaching token budget).
+
 ## 0.2.0
 
 Auth style support and OpenAI compatibility fixes.
