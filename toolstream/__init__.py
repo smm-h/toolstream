@@ -7,6 +7,7 @@ from ._agent import (
     resolve_prompt,
 )
 from ._context import ToolContext
+from ._history import HistoryStrategy, TokenBudgetHistory, UnboundedHistory
 from ._invoke import invoke_agent, invoke_agent_sync
 from ._session import AsyncSession, SyncSession
 from ._tools import Tool, collect_tools, tool
@@ -34,6 +35,10 @@ __all__ = [
     "AsyncSession",
     "SyncSession",
     "SessionConfig",
+    # History strategies
+    "HistoryStrategy",
+    "UnboundedHistory",
+    "TokenBudgetHistory",
     # Events
     "StepStart",
     "Text",

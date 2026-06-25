@@ -25,3 +25,4 @@ class SessionConfig:
     sandbox: AgentSandbox | None = None
     metadata: dict[str, str] | None = None
     auth_style: str | None = None
+    history_strategy: object | None = None

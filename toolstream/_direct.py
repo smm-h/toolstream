@@ -15,6 +15,7 @@ from typing import Any
 import httpx
 
 from . import _builtin_tools
+from ._history import HistoryStrategy, UnboundedHistory
 from ._tools import Tool, collect_tools
 from .config import SessionConfig
 from .events import Error, StepFinish, StepStart, Text, ToolUse
@@ -120,6 +121,7 @@ class DirectClient:
         tool_context: object | None = None,
         max_completion_tokens: int = 16384,
         http_client: httpx.AsyncClient | None = None,
+        history: HistoryStrategy | None = None,
     ) -> None:
         if not config.api_key:
             raise ValueError("api_key is required for direct backend")
@@ -139,7 +141,12 @@ class DirectClient:
         self._base_url = config.base_url.rstrip("/")
         self._api_key = config.api_key
         self._model = _strip_provider(config.model)
-        self._messages: list[dict] = []
+        if history is not None:
+            self._history: HistoryStrategy = history
+        elif config.history_strategy is not None:
+            self._history: HistoryStrategy = config.history_strategy  # type: ignore[no-redef]
+        else:
+            self._history: HistoryStrategy = UnboundedHistory()  # type: ignore[no-redef]
         self._session_id = str(uuid.uuid4())
         self._cwd = config.cwd or os.getcwd()
         self._max_completion_tokens = max_completion_tokens
@@ -174,7 +181,7 @@ class DirectClient:
         self._tool_definitions = _build_tool_definitions(self._tools)
 
         # Build system prompt
-        self._messages.append({"role": "system", "content": config.system_prompt})
+        self._history.append({"role": "system", "content": config.system_prompt})
 
     @property
     def session_id(self) -> str:
@@ -197,7 +204,7 @@ class DirectClient:
 
     async def send(self, message: str) -> AsyncIterator[StepStart | Text | ToolUse | StepFinish | Error]:
         """Send a message and yield events. Handles the tool-calling loop internally."""
-        self._messages.append({"role": "user", "content": message})
+        self._history.append({"role": "user", "content": message})
         msg_id = str(uuid.uuid4())
 
         yield StepStart(
@@ -207,7 +214,7 @@ class DirectClient:
         )
 
         while True:
-            response = await self._chat_completion(self._messages)
+            response = await self._chat_completion(self._history.messages_for_api())
             usage = response.get("usage", {})
 
             choice = response["choices"][0]
@@ -221,7 +228,7 @@ class DirectClient:
             }
             if assistant_msg.get("tool_calls"):
                 msg_to_append["tool_calls"] = assistant_msg["tool_calls"]
-            self._messages.append(msg_to_append)
+            self._history.append(msg_to_append)
 
             # Yield text if present
             if assistant_msg.get("content"):
@@ -257,12 +264,13 @@ class DirectClient:
                     timestamp=_timestamp_ms(),
                 )
 
-                self._messages.append({
+                self._history.append({
                     "role": "tool",
                     "tool_call_id": tc["id"],
                     "content": result if isinstance(result, str) else json.dumps(result),
                 })
 
+            self._history.on_usage(usage)
             yield self._step_finish(msg_id, usage, has_tool_calls=bool(tool_calls))
             if not tool_calls:
                 break
