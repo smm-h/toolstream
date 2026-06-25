@@ -1,0 +1,1 @@
+{"commits":["b28c152b491c844da718e8cc1d17bc4f68cc1e6c"],"user_facing":true,"description":"**Breaking.** StepFinish now emits per-step token deltas from each API response instead of running totals. Consumers that accumulated totals across steps will now get correct per-step values directly.","type":"breaking"}
