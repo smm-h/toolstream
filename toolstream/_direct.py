@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import os
+import random
 import time
 import uuid
 from collections.abc import AsyncIterator
@@ -16,7 +19,10 @@ from ._tools import Tool, collect_tools
 from .config import SessionConfig
 from .events import Error, StepFinish, StepStart, Text, ToolUse
 
-_MAX_RETRIES = 1
+logger = logging.getLogger(__name__)
+
+_MAX_RETRIES = 3
+_RETRYABLE_STATUS_CODES = frozenset({429, 503})
 
 
 def _strip_provider(model: str) -> str:
@@ -47,6 +53,60 @@ def _build_tool_definitions(tools: dict[str, Tool]) -> list[dict]:
             },
         })
     return defs
+
+
+def _backoff(attempt: int) -> float:
+    """Exponential backoff with jitter, capped at 16s."""
+    return min(2 ** attempt, 16) + random.uniform(0, 1)
+
+
+async def _request_with_retry(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    json: dict[str, Any],
+    headers: dict[str, str],
+) -> dict:
+    """POST with retries for transient errors and rate limits."""
+    last_error: Exception | None = None
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            response = await client.post(url, json=json, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            last_error = e
+            if attempt < _MAX_RETRIES:
+                delay = _backoff(attempt)
+                logger.warning(
+                    "Request failed (attempt %d/%d): %s. Retrying in %.1fs",
+                    attempt + 1, _MAX_RETRIES + 1, e, delay,
+                )
+                await asyncio.sleep(delay)
+                continue
+            raise
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code in _RETRYABLE_STATUS_CODES:
+                last_error = e
+                if attempt < _MAX_RETRIES:
+                    retry_after = e.response.headers.get("retry-after")
+                    if retry_after is not None:
+                        try:
+                            delay = min(float(retry_after), 60.0)
+                        except ValueError:
+                            delay = _backoff(attempt)
+                    else:
+                        delay = _backoff(attempt)
+                    logger.warning(
+                        "Request failed with %d (attempt %d/%d). Retrying in %.1fs",
+                        e.response.status_code, attempt + 1, _MAX_RETRIES + 1, delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                raise
+            raise
+    # Should never reach here, but satisfy type checker
+    raise last_error  # type: ignore[misc]
 
 
 class DirectClient:
@@ -120,6 +180,21 @@ class DirectClient:
     def session_id(self) -> str:
         return self._session_id
 
+    def _step_finish(self, msg_id: str, usage: dict, has_tool_calls: bool) -> StepFinish:
+        """Build a StepFinish with per-step token values from the API response."""
+        return StepFinish(
+            session_id=self._session_id,
+            message_id=msg_id,
+            reason="tool-calls" if has_tool_calls else "stop",
+            input_tokens=usage.get("prompt_tokens", 0),
+            output_tokens=usage.get("completion_tokens", 0),
+            reasoning_tokens=usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0),
+            cache_read_tokens=usage.get("prompt_tokens_details", {}).get("cached_tokens", 0),
+            cache_write_tokens=0,
+            cost=0.0,
+            timestamp=_timestamp_ms(),
+        )
+
     async def send(self, message: str) -> AsyncIterator[StepStart | Text | ToolUse | StepFinish | Error]:
         """Send a message and yield events. Handles the tool-calling loop internally."""
         self._messages.append({"role": "user", "content": message})
@@ -131,14 +206,9 @@ class DirectClient:
             timestamp=_timestamp_ms(),
         )
 
-        total_input_tokens = 0
-        total_output_tokens = 0
-
         while True:
             response = await self._chat_completion(self._messages)
             usage = response.get("usage", {})
-            total_input_tokens += usage.get("prompt_tokens", 0)
-            total_output_tokens += usage.get("completion_tokens", 0)
 
             choice = response["choices"][0]
             assistant_msg = choice["message"]
@@ -164,21 +234,6 @@ class DirectClient:
 
             # Check for tool calls
             tool_calls = assistant_msg.get("tool_calls", [])
-            if not tool_calls:
-                # No tool calls -- conversation turn is done
-                yield StepFinish(
-                    session_id=self._session_id,
-                    message_id=msg_id,
-                    reason="stop",
-                    input_tokens=total_input_tokens,
-                    output_tokens=total_output_tokens,
-                    reasoning_tokens=usage.get("completion_tokens_details", {}).get("reasoning_tokens", 0),
-                    cache_read_tokens=usage.get("prompt_tokens_details", {}).get("cached_tokens", 0),
-                    cache_write_tokens=0,
-                    cost=0.0,
-                    timestamp=_timestamp_ms(),
-                )
-                break
 
             # Execute tool calls and add results
             for tc in tool_calls:
@@ -208,22 +263,12 @@ class DirectClient:
                     "content": result if isinstance(result, str) else json.dumps(result),
                 })
 
-            # Yield StepFinish for this tool-calling round
-            yield StepFinish(
-                session_id=self._session_id,
-                message_id=msg_id,
-                reason="tool-calls",
-                input_tokens=total_input_tokens,
-                output_tokens=total_output_tokens,
-                reasoning_tokens=0,
-                cache_read_tokens=0,
-                cache_write_tokens=0,
-                cost=0.0,
-                timestamp=_timestamp_ms(),
-            )
+            yield self._step_finish(msg_id, usage, has_tool_calls=bool(tool_calls))
+            if not tool_calls:
+                break
 
     async def _chat_completion(self, messages: list[dict]) -> dict:
-        """Call LLM chat completions via AI Gateway with timeout and retry."""
+        """Call LLM chat completions via AI Gateway with retry."""
         url = self._base_url
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if self._config.auth_style == "bearer":
@@ -239,22 +284,9 @@ class DirectClient:
         if self._config.metadata:
             body["metadata"] = self._config.metadata
 
-        last_error: Exception | None = None
-        for attempt in range(_MAX_RETRIES + 1):
-            try:
-                response = await self._client.post(url, json=body, headers=headers)
-                response.raise_for_status()
-                return response.json()
-            except httpx.ReadTimeout as e:
-                last_error = e
-                if attempt < _MAX_RETRIES:
-                    continue
-                raise
-            except httpx.HTTPStatusError:
-                raise
-
-        # Should never reach here, but satisfy type checker
-        raise last_error  # type: ignore[misc]
+        return await _request_with_retry(
+            self._client, url, json=body, headers=headers,
+        )
 
     async def _dispatch_tool(self, name: str, args: dict[str, Any]) -> str:
         """Dispatch a tool call by name. Returns the result string."""
