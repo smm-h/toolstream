@@ -232,8 +232,8 @@ class DirectClient:
                     timestamp=_timestamp_ms(),
                 )
 
-            # Check for tool calls
-            tool_calls = assistant_msg.get("tool_calls", [])
+            # Check for tool calls (may be None or missing)
+            tool_calls = assistant_msg.get("tool_calls") or []
 
             # Execute tool calls and add results
             for tc in tool_calls:

@@ -266,14 +266,12 @@ async def test_token_accumulation_across_steps(mock_llm_responses):
     assert len(result_events) == 1
     result = result_events[0]
 
-    # DirectClient emits running totals in each StepFinish (not per-step
-    # deltas). The first StepFinish has 100 input / 50 output, the second
-    # has 300 input / 130 output (100+200, 50+80). AsyncSession._send_direct
-    # accumulates these via +=, so the Result reflects the sum of all
-    # StepFinish values. Before the bug fix, = (assignment) meant only the
-    # last StepFinish's tokens were counted (300/130 instead of 400/180).
-    assert result.total_input_tokens == 400  # 100 + (100+200)
-    assert result.total_output_tokens == 180  # 50 + (50+80)
+    # DirectClient emits per-step deltas in each StepFinish (not running
+    # totals). The first StepFinish has 100 input / 50 output, the second
+    # has 200 input / 80 output. AsyncSession._send_direct accumulates
+    # these via +=, so the Result reflects the correct sum of per-step values.
+    assert result.total_input_tokens == 300  # 100 + 200
+    assert result.total_output_tokens == 130  # 50 + 80
 
     await session.close()
 
@@ -405,10 +403,10 @@ async def test_multi_round_tool_calling_loop(mock_llm_responses):
     # Verify exactly 7 events (no leftover mock responses consumed)
     assert len(events) == 7
 
-    # Token totals accumulate across all 3 rounds in the final StepFinish
+    # Each StepFinish carries only its own API call's tokens (per-step deltas)
     final_step = events[6]
-    assert final_step.input_tokens == 100 + 150 + 200  # 450
-    assert final_step.output_tokens == 20 + 30 + 40  # 90
+    assert final_step.input_tokens == 200  # just the last call
+    assert final_step.output_tokens == 40  # just the last call
 
 
 async def test_multi_turn_conversation(mock_llm_responses):
