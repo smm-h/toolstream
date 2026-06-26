@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import queue
+import threading
 from dataclasses import dataclass
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -599,3 +603,59 @@ async def test_multiple_tool_calls_in_single_response(mock_llm_responses):
 
     # Verify both tool results were appended to messages by checking that
     # the final response was reached (2 mock responses consumed, no error)
+
+
+def test_sync_session_keyboard_interrupt_cancels_future():
+    """KeyboardInterrupt during SyncSession.send() cancels the background Future.
+
+    Verifies that the future returned by run_coroutine_threadsafe is stored
+    and cancelled when KeyboardInterrupt is raised during queue consumption.
+    We mock the async session to produce events slowly, then raise
+    KeyboardInterrupt via a queue wrapper that interrupts on the second get().
+    """
+    config = direct_config()
+
+    with SyncSession(config) as session:
+        cancelled = threading.Event()
+
+        # Track the real future so we can verify it was stored
+        real_future_ref: list = []
+        original_run = asyncio.run_coroutine_threadsafe
+
+        def tracking_run(coro, loop):
+            fut = original_run(coro, loop)
+            real_future_ref.append(fut)
+            # Wrap the future to detect cancel() calls
+            original_cancel = fut.cancel
+
+            def tracked_cancel(*args, **kwargs):
+                cancelled.set()
+                return original_cancel(*args, **kwargs)
+
+            fut.cancel = tracked_cancel
+            return fut
+
+        # Make the async session produce one event then block forever
+        async def slow_send(message):
+            yield "first_event"
+            await asyncio.sleep(60)
+
+        session._async_session.send = slow_send  # type: ignore[assignment]
+
+        # Replace queue.Queue.get to raise KeyboardInterrupt on second call
+        call_count = 0
+        original_get = queue.Queue.get
+
+        def interrupting_get(self, *args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count >= 2:
+                raise KeyboardInterrupt
+            return original_get(self, *args, **kwargs)
+
+        with patch.object(queue.Queue, "get", interrupting_get), \
+             patch("asyncio.run_coroutine_threadsafe", side_effect=tracking_run):
+            with pytest.raises(KeyboardInterrupt):
+                list(session.send("test"))
+
+        assert cancelled.is_set(), "future.cancel() was not called on KeyboardInterrupt"

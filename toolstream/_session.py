@@ -140,15 +140,19 @@ class SyncSession:
             finally:
                 q.put(sentinel)
 
-        asyncio.run_coroutine_threadsafe(_produce(), self._loop)
+        future = asyncio.run_coroutine_threadsafe(_produce(), self._loop)
 
-        while True:
-            item = q.get()
-            if item is sentinel:
-                break
-            if isinstance(item, Exception):
-                raise item
-            yield item
+        try:
+            while True:
+                item = q.get()
+                if item is sentinel:
+                    break
+                if isinstance(item, Exception):
+                    raise item
+                yield item
+        except KeyboardInterrupt:
+            future.cancel()
+            raise
 
     def close(self) -> None:
         """Close the session and shut down the event loop."""
