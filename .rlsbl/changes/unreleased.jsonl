@@ -1,0 +1,1 @@
+{"commits":["fcdd1d45fd9c5313f227e13e55be0fc27b370d57"],"user_facing":true,"description":"**Fix.** SyncSession KeyboardInterrupt now cancels the background Future, preventing orphaned coroutines.","type":"fix"}
