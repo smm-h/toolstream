@@ -8,5 +8,7 @@
       "type": "pypi",
       "local": false
     }
-  }
+  },
+  "check_timeout": 120,
+  "github_repo": "smm-h/toolstream"
 }
