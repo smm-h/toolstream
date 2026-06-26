@@ -2,6 +2,14 @@
 
 # Changelog
 
+## 0.3.1
+
+SyncSession KeyboardInterrupt handling.
+
+### Fixes
+
+- **Fix.** SyncSession KeyboardInterrupt now cancels the background Future, preventing orphaned coroutines.
+
 ## 0.3.0
 
 Per-step token deltas, retry with backoff, pluggable history strategy.
