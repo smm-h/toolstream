@@ -2,6 +2,14 @@
 
 # Changelog
 
+## 0.4.0
+
+Output truncation detection via finish_reason
+
+### Features
+
+- Detect output truncation (finish_reason=length) and emit Error event
+
 ## 0.3.1
 
 SyncSession KeyboardInterrupt handling.
