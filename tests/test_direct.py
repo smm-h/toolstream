@@ -11,7 +11,7 @@ import pytest
 from toolstream._direct import DirectClient, _strip_provider
 from toolstream._tools import Tool, tool
 
-from toolstream import AsyncSession, Result, SessionConfig, StepFinish, Text, ToolUse
+from toolstream import AsyncSession, Error, Result, SessionConfig, StepFinish, Text, ToolUse
 
 # --- Unit tests for _strip_provider ---
 
@@ -462,6 +462,101 @@ async def test_x_api_key_auth_header(tmp_path: Path):
         pass
     assert captured_headers.get("x-api-key") == "my-gateway-key"
     assert "authorization" not in captured_headers
+
+
+# --- finish_reason="length" truncation detection ---
+
+
+@pytest.mark.asyncio
+async def test_finish_reason_length_emits_error(tmp_path, mock_llm_responses):
+    """When finish_reason is 'length', send() yields an Error event with name='output_truncated'."""
+    truncated_response = {
+        "choices": [{
+            "message": {
+                "content": "partial output that got cut",
+                "tool_calls": None,
+            },
+            "finish_reason": "length",
+        }],
+        "usage": {
+            "prompt_tokens": 100,
+            "completion_tokens": 4096,
+            "total_tokens": 4196,
+        },
+    }
+    mock_client = mock_llm_responses(truncated_response)
+    from .conftest import direct_config
+    config = direct_config(cwd=str(tmp_path))
+    client = DirectClient(config, http_client=mock_client, max_completion_tokens=4096)
+
+    events = []
+    async for event in client.send("generate a very long response"):
+        events.append(event)
+
+    # Should have StepStart then Error -- no StepFinish, no Text
+    error_events = [e for e in events if isinstance(e, Error)]
+    assert len(error_events) == 1
+    err = error_events[0]
+    assert err.name == "output_truncated"
+    assert "4096" in err.message
+    assert err.data["finish_reason"] == "length"
+    assert err.data["max_completion_tokens"] == 4096
+
+
+@pytest.mark.asyncio
+async def test_finish_reason_length_breaks_loop(tmp_path, mock_llm_responses):
+    """When finish_reason is 'length', no further API calls are made."""
+    truncated_response = {
+        "choices": [{
+            "message": {
+                "content": "cut off",
+                "tool_calls": None,
+            },
+            "finish_reason": "length",
+        }],
+        "usage": {
+            "prompt_tokens": 50,
+            "completion_tokens": 1000,
+            "total_tokens": 1050,
+        },
+    }
+    # Only provide one response -- if the loop tried a second call, it would
+    # raise RuntimeError("mock_llm_responses exhausted")
+    mock_client = mock_llm_responses(truncated_response)
+    from .conftest import direct_config
+    config = direct_config(cwd=str(tmp_path))
+    client = DirectClient(config, http_client=mock_client, max_completion_tokens=1000)
+
+    events = []
+    async for event in client.send("test"):
+        events.append(event)
+
+    # The loop broke after one API call -- no exception from exhausted mock
+    error_events = [e for e in events if isinstance(e, Error)]
+    assert len(error_events) == 1
+
+    # No StepFinish should be yielded (loop broke before it)
+    step_finishes = [e for e in events if isinstance(e, StepFinish)]
+    assert len(step_finishes) == 0
+
+
+@pytest.mark.asyncio
+async def test_finish_reason_stop_no_error(tmp_path, mock_llm_responses):
+    """Normal finish_reason='stop' does NOT emit an Error event."""
+    from .conftest import text_response, direct_config
+    mock_client = mock_llm_responses(text_response("hello"))
+    config = direct_config(cwd=str(tmp_path))
+    client = DirectClient(config, http_client=mock_client)
+
+    events = []
+    async for event in client.send("say hello"):
+        events.append(event)
+
+    error_events = [e for e in events if isinstance(e, Error)]
+    assert len(error_events) == 0
+    # Should have normal flow: StepStart, Text, StepFinish
+    assert any(isinstance(e, Text) for e in events)
+    assert any(isinstance(e, StepFinish) for e in events)
 
 
 # --- Integration tests (require real Azure API) ---
