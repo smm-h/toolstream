@@ -220,6 +220,28 @@ class DirectClient:
             choice = response["choices"][0]
             assistant_msg = choice["message"]
 
+            # Detect output truncation (finish_reason="length")
+            finish_reason = choice.get("finish_reason", "")
+            if finish_reason == "length":
+                logger.warning(
+                    "Model output truncated at %d tokens (finish_reason=length)",
+                    self._max_completion_tokens,
+                )
+                yield Error(
+                    session_id=self._session_id,
+                    name="output_truncated",
+                    message=(
+                        f"Model output truncated at {self._max_completion_tokens} tokens. "
+                        f"Increase max_completion_tokens or simplify the task."
+                    ),
+                    data={
+                        "finish_reason": finish_reason,
+                        "max_completion_tokens": self._max_completion_tokens,
+                    },
+                    timestamp=_timestamp_ms(),
+                )
+                break
+
             # Build the message dict to append to conversation.
             # OpenAI requires content (even if null) when tool_calls are present.
             msg_to_append: dict = {
