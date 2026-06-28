@@ -1,0 +1,1 @@
+{"commits":["fc0058aca1d9b7619115624e327d31b9b41d4281"],"user_facing":true,"description":"Detect output truncation (finish_reason=length) and emit Error event","type":"feature"}
