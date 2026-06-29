@@ -2,6 +2,21 @@
 
 # Changelog
 
+## 0.4.1
+
+Safety net for non-serializable tool results
+
+<details>
+<summary>Context</summary>
+
+Tool handlers that return non-JSON-serializable objects (dataclasses, custom response objects) previously crashed json.dumps during the tool-calling loop. Now falls back to repr() with a logged warning.
+
+</details>
+
+### Fixes
+
+- **Fix.** Non-serializable tool results (e.g., dataclasses, custom objects) no longer crash the tool-calling loop. Falls back to `repr()` with a warning.
+
 ## 0.4.0
 
 Output truncation detection via finish_reason
