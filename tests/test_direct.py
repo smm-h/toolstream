@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from unittest.mock import AsyncMock
@@ -462,6 +463,63 @@ async def test_x_api_key_auth_header(tmp_path: Path):
         pass
     assert captured_headers.get("x-api-key") == "my-gateway-key"
     assert "authorization" not in captured_headers
+
+
+# --- Non-serializable tool result safety net ---
+
+
+@pytest.mark.asyncio
+async def test_non_serializable_tool_result(tmp_path, mock_llm_responses, caplog):
+    """Tool results that aren't JSON-serializable fall back to repr() with a warning."""
+    from dataclasses import dataclass, field
+    from .conftest import tool_call_response, text_response, direct_config
+
+    @dataclass
+    class FakeResponse:
+        status: int
+        body: str
+        raw: bytes = b"\x00\x01"
+
+    async def fake_fetch(url: str) -> FakeResponse:
+        return FakeResponse(status=200, body="ok")
+
+    fetch_tool = Tool(
+        name="fake_fetch",
+        description="Fetch a URL",
+        input_schema={
+            "type": "object",
+            "properties": {"url": {"type": "string"}},
+            "required": ["url"],
+        },
+        handler=fake_fetch,
+        inject=[],
+    )
+
+    # Two responses: first triggers tool call, second is final text
+    mock_client = mock_llm_responses(
+        tool_call_response("fake_fetch", {"url": "https://example.com"}),
+        text_response("done"),
+    )
+    config = direct_config(cwd=str(tmp_path))
+    client = DirectClient(config, tools=[fetch_tool], http_client=mock_client)
+
+    events = []
+    with caplog.at_level(logging.WARNING, logger="toolstream._direct"):
+        async for event in client.send("fetch example.com"):
+            events.append(event)
+
+    # The serialization succeeded (no crash) and warning was logged
+    assert any("tool_result_not_serializable" in r.message for r in caplog.records)
+    assert any("FakeResponse" in r.message for r in caplog.records)
+
+    # A ToolUse event was emitted with the repr'd result
+    tool_events = [e for e in events if isinstance(e, ToolUse)]
+    assert len(tool_events) == 1
+
+    # The conversation continued after the tool call (got final text)
+    text_events = [e for e in events if isinstance(e, Text)]
+    assert len(text_events) == 1
+    assert text_events[0].text == "done"
 
 
 # --- finish_reason="length" truncation detection ---

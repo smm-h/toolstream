@@ -22,6 +22,20 @@ from .events import Error, StepFinish, StepStart, Text, ToolUse
 
 logger = logging.getLogger(__name__)
 
+
+def _safe_default(obj: object) -> str:
+    """JSON serialization fallback: log a warning and return repr().
+
+    Used as the ``default`` argument to ``json.dumps()`` when serializing
+    tool results that may contain non-JSON-serializable objects (e.g.,
+    dataclasses, bytes, custom response objects).
+    """
+    logger.warning(
+        "tool_result_not_serializable: type=%s", type(obj).__name__,
+    )
+    return repr(obj)
+
+
 _MAX_RETRIES = 3
 _RETRYABLE_STATUS_CODES = frozenset({429, 503})
 
@@ -289,7 +303,7 @@ class DirectClient:
                 self._history.append({
                     "role": "tool",
                     "tool_call_id": tc["id"],
-                    "content": result if isinstance(result, str) else json.dumps(result),
+                    "content": result if isinstance(result, str) else json.dumps(result, default=_safe_default),
                 })
 
             self._history.on_usage(usage)
