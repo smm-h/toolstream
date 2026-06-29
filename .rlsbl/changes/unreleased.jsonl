@@ -1,0 +1,1 @@
+{"commits":["71b0f8aa45926297fc5ae422f6de8ca95d1735ef"],"user_facing":true,"description":"**Fix.** Non-serializable tool results (e.g., dataclasses, custom objects) no longer crash the tool-calling loop. Falls back to `repr()` with a warning.","type":"fix"}
