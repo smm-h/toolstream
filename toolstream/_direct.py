@@ -167,6 +167,12 @@ class DirectClient:
         self._tool_context = tool_context
         self._owns_client = http_client is None
 
+        # Guard fields
+        self._max_tool_rounds = config.max_tool_rounds
+        self._send_timeout = config.send_timeout
+        self._tool_call_timeout = config.tool_call_timeout
+        self._max_turn_tokens = config.max_turn_tokens
+
         # Builtin context for inject resolution
         self._builtin_context: dict[str, Any] = {
             "cwd": self._cwd,
@@ -227,7 +233,31 @@ class DirectClient:
             timestamp=_timestamp_ms(),
         )
 
+        iteration = 0
+        start = time.monotonic()
+        cumulative_tokens = 0
+
         while True:
+            iteration += 1
+            if self._max_tool_rounds is not None and iteration > self._max_tool_rounds:
+                yield Error(
+                    session_id=self._session_id,
+                    name="max_iterations_exceeded",
+                    message=f"Stopped after {self._max_tool_rounds} tool rounds",
+                    data={"max_tool_rounds": self._max_tool_rounds, "iteration": iteration},
+                    timestamp=_timestamp_ms(),
+                )
+                break
+            if self._send_timeout is not None and time.monotonic() - start > self._send_timeout:
+                yield Error(
+                    session_id=self._session_id,
+                    name="send_timeout_exceeded",
+                    message=f"Stopped after {self._send_timeout}s",
+                    data={"send_timeout": self._send_timeout, "elapsed": time.monotonic() - start},
+                    timestamp=_timestamp_ms(),
+                )
+                break
+
             response = await self._chat_completion(self._history.messages_for_api())
             usage = response.get("usage", {})
 
@@ -307,8 +337,20 @@ class DirectClient:
                 })
 
             self._history.on_usage(usage)
+            step_input = usage.get("prompt_tokens", 0)
+            step_output = usage.get("completion_tokens", 0)
+            cumulative_tokens += step_input + step_output
             yield self._step_finish(msg_id, usage, has_tool_calls=bool(tool_calls))
             if not tool_calls:
+                break
+            if self._max_turn_tokens is not None and cumulative_tokens > self._max_turn_tokens:
+                yield Error(
+                    session_id=self._session_id,
+                    name="token_budget_exceeded",
+                    message=f"Stopped after {cumulative_tokens} tokens (budget: {self._max_turn_tokens})",
+                    data={"cumulative_tokens": cumulative_tokens, "max_turn_tokens": self._max_turn_tokens},
+                    timestamp=_timestamp_ms(),
+                )
                 break
 
     async def _chat_completion(self, messages: list[dict]) -> dict:
