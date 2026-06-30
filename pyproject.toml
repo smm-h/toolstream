@@ -1,6 +1,6 @@
 [project]
 name = "toolstream"
-version = "0.4.1"
+version = "0.5.0"
 requires-python = ">=3.11"
 description = "Typed streaming SDK for LLM tool-calling loops"
 
