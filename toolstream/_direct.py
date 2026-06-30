@@ -380,11 +380,22 @@ class DirectClient:
         if tool_obj is None:
             return f"Error: unknown tool '{name}'"
 
+        # Resolve effective timeout: per-tool > session default > None
+        effective_timeout = self._tool_call_timeout
+        if tool_obj.timeout is not None:
+            effective_timeout = tool_obj.timeout
+
         if name in self._builtin_names:
             # Resolve inject params from builtin context
             kwargs = {p: self._builtin_context[p] for p in tool_obj.inject}
             try:
-                result = await tool_obj.handler(**args, **kwargs)
+                coro = tool_obj.handler(**args, **kwargs)
+                if effective_timeout is not None:
+                    result = await asyncio.wait_for(coro, timeout=effective_timeout)
+                else:
+                    result = await coro
+            except asyncio.TimeoutError:
+                return f"Error: tool execution timed out after {effective_timeout}s"
             except Exception as e:
                 return f"Error: {e}"
         else:
@@ -404,7 +415,13 @@ class DirectClient:
                         f"required by tool '{name}'"
                     )
             try:
-                result = await tool_obj.handler(**args)
+                coro = tool_obj.handler(**args)
+                if effective_timeout is not None:
+                    result = await asyncio.wait_for(coro, timeout=effective_timeout)
+                else:
+                    result = await coro
+            except asyncio.TimeoutError:
+                return f"Error: tool execution timed out after {effective_timeout}s"
             except Exception as e:
                 return f"Error: {e}"
 
