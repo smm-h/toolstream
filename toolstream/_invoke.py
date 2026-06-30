@@ -91,6 +91,10 @@ def _build_invocation_config(
         sandbox=config.sandbox,
         metadata=config.metadata,
         auth_style=config.auth_style,
+        max_tool_rounds=config.max_tool_rounds,
+        send_timeout=config.send_timeout,
+        tool_call_timeout=config.tool_call_timeout,
+        max_turn_tokens=config.max_turn_tokens,
     )
 
 
