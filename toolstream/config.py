@@ -26,3 +26,7 @@ class SessionConfig:
     metadata: dict[str, str] | None = None
     auth_style: str | None = None
     history_strategy: object | None = None
+    max_tool_rounds: int | None = None
+    send_timeout: float | None = None
+    tool_call_timeout: float | None = None
+    max_turn_tokens: int | None = None
