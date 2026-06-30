@@ -1,0 +1,1 @@
+{"commits":["55f1826ad8bf9aed6196e941cd23798e14588417"],"user_facing":true,"description":"**New.** Guard fields on SessionConfig: max_tool_rounds, send_timeout, tool_call_timeout, max_turn_tokens.","type":"feature"}
