@@ -22,6 +22,7 @@ class Tool:
     input_schema: dict
     handler: Callable
     inject: list[str]
+    timeout: float | None = None
 
 
 def tool(
@@ -29,6 +30,7 @@ def tool(
     name: str | None = None,
     description: str | None = None,
     inject: list[str] | None = None,
+    timeout: float | None = None,
 ) -> Callable:
     """Decorator factory that attaches Tool metadata to a function.
 
@@ -77,6 +79,7 @@ def tool(
             input_schema=input_schema,
             handler=fn,
             inject=inject_list,
+            timeout=timeout,
         )
 
         return fn

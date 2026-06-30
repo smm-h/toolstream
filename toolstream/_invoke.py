@@ -55,6 +55,7 @@ def _filter_tools(
                     input_schema=input_schema,
                     handler=handler,
                     inject=[],
+                    timeout=None,
                 )
             )
 
