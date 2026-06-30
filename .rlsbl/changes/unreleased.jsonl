@@ -1,2 +1,3 @@
 {"commits":["55f1826ad8bf9aed6196e941cd23798e14588417"],"user_facing":true,"description":"**New.** Guard fields on SessionConfig: max_tool_rounds, send_timeout, tool_call_timeout, max_turn_tokens.","type":"feature"}
 {"commits":["666a22a60dadaf46bf9ef6361abcde4ed1498785"],"user_facing":true,"description":"**New.** Per-tool timeout field on Tool dataclass and @tool decorator.","type":"feature"}
+{"commits":["d624378a8c0ebd96517b5f7a46a560886d748be3"],"user_facing":true,"description":"**New.** Enforce max_tool_rounds, send_timeout, and max_turn_tokens guards in direct sessions.","type":"feature"}
