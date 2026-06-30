@@ -1,0 +1,12 @@
+# Version bump type: patch, minor, major, hotfix, or prerelease
+bump = "minor"
+# Short description of this release (required)
+description = "Session and tool guards: max_tool_rounds, send_timeout, tool_call_timeout, max_turn_tokens. Per-tool timeout on Tool dataclass."
+# Optional context explaining why these changes were made
+context = ""
+# Pre-release identifier: alpha, beta, rc, or stable
+# preid = ""
+# Set to true to generate a blog post for this release
+# blog = false
+include = ["pypi"]
+exclude = []
