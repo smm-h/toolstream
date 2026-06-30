@@ -3,3 +3,4 @@
 {"commits":["d624378a8c0ebd96517b5f7a46a560886d748be3"],"user_facing":true,"description":"**New.** Enforce max_tool_rounds, send_timeout, and max_turn_tokens guards in direct sessions.","type":"feature"}
 {"commits":["c8f3c0d5f6757b6e0924bd4de0d9f760229ef19e"],"user_facing":true,"description":"**New.** Enforce per-tool timeout in _dispatch_tool().","type":"feature"}
 {"commits":["866d9ea71c5e7ee6f490f20651010e2ce4059a7a"],"user_facing":true,"description":"**New.** Forward guard fields in _build_invocation_config() for invoke-mode sessions.","type":"feature"}
+{"commits":["6c918e80ef4e68ae5fd4e2d8eef22457e1ac7c56"],"user_facing":false}
